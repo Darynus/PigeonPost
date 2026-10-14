@@ -1,0 +1,7 @@
+package-as: PigeonPost
+
+ignore:
+  - images
+  - README.md
+  - .pkgmeta
+  - .gitignore
