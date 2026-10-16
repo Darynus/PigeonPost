@@ -17,6 +17,10 @@ You farm herbs and ore on one character, but your alchemist, blacksmith or bank 
 
 ![One click, one letter](images/pigeonpost-1-ablauf.png)
 
+## New in 0.6
+
+- **Looks like part of the game**: the Pigeon Post window now uses the game's own window frame with a portrait, tabs along the bottom, red buttons, checkboxes and radio buttons. The mailbox panel uses the same buttons and checkboxes.
+
 ## New in 0.5
 
 - **Distribute between your crafters**: herbs to your alchemist, ore to your blacksmith, cloth to your tailor, everything else to your bank character. Pigeon Post plans all letters, you send them one click at a time.

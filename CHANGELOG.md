@@ -1,5 +1,11 @@
 # Pigeon Post changelog
 
+## 0.6.0-beta (2026-10-16)
+
+- **The window now looks like a real WoW window**: portrait frame with the pigeon, title bar, inset panel and tabs along the bottom, like the game's own windows.
+- The game's own red buttons, checkboxes and radio buttons, in the window and in the mailbox panel. Headings in gold.
+- List rows light up like entries in the quest log.
+
 ## 0.5.0-beta (2026-10-14)
 
 - **Simpler panel**: the Test, Attach and Send modes are gone. The panel shows the next letter, and one click attaches exactly these items and sends it. Before your very first letter Pigeon Post asks once. `/pigeon test` was removed.

@@ -2,7 +2,7 @@
 ## Title: |cff4f9bffPigeon|r Post
 ## Notes: Send herbs, ore, cloth and green gear to your own characters, or split them between your crafters. Safe, with a preview and one click per letter. /pigeon
 ## Author: Darynus
-## Version: 0.5.0-beta
+## Version: 0.6.0-beta
 ## X-Curse-Project-ID: 1743802
 ## IconTexture: Interface\AddOns\PigeonPost\Media\Icon
 ## AddonCompartmentFunc: PigeonPost_OnAddonCompartmentClick

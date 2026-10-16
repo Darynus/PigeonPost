@@ -1,5 +1,8 @@
 -- Hauptfenster: Chars, Verteilen, Gegenstandsregeln, Einstellungen, Nie senden, Verlauf, Prüfen, Hilfe.
 -- Öffnen mit /pigeon, über den Minikarten-Knopf oder im Optionen-Menü.
+-- Aussehen wie die Fenster des Spiels, wie bei Campfire Buddy (Patrick, 16. Okt): Porträtrahmen
+-- mit Titelleiste, versenkte Innenfläche, Reiter unten, rote Knöpfe, Haken und Auswahlknöpfe aus
+-- dem Client. Fehlt eine dieser Vorlagen, baut das Fenster sich wie früher flach selbst.
 local ADDON, ns = ...
 local L, S = ns.L, ns.Stil
 local F, rgba = S.F, S.rgba
@@ -7,11 +10,13 @@ local F, rgba = S.F, S.rgba
 local W = { seiten = {} }
 ns.Fenster = W
 
+-- Maße: werden in W:Bauen je nach Aufbau gesetzt (echt oder flach)
 local BREITE, HOEHE = 640, 480
 local SEITE = 150
 local X = SEITE + 16                  -- linker Rand des Inhalts
 local B = BREITE - X - 16             -- Breite des Inhalts
 local OBEN = -60                      -- erste Zeile unter dem Kopf
+local UNTEN = 16
 
 local REITER = {
   { schluessel = "chars", text = L.TAB_CHARACTERS },
@@ -27,7 +32,9 @@ local REITER = {
 local function seite(schluessel)
   local f = CreateFrame("Frame", nil, W.rahmen)
   f:SetPoint("TOPLEFT", X, OBEN)
-  f:SetSize(B, HOEHE + OBEN - 16)
+  f:SetSize(B, HOEHE + OBEN - UNTEN)
+  -- Über der versenkten Fläche des echten Fensters
+  if W.echt then f:SetFrameLevel((W.rahmen:GetFrameLevel() or 1) + 4) end
   f:Hide()
   W.seiten[schluessel] = f
   return f
@@ -390,7 +397,7 @@ local function bauenItems()
 
   function f:Aktualisieren()
     local p = V.Aktiv()
-    self.titel:SetText(string.format(L.ITEM_RULES_FOR, string.upper(p.name)))
+    self.titel:SetText(string.format(L.ITEM_RULES_FOR, p.name))
     local daten = {}
     for id, ziel in pairs(p.items) do
       local d = ns.Regeln.Daten(id)
@@ -658,24 +665,59 @@ end
 
 -- Rahmen ---------------------------------------------------------------------------------
 
-function W:Bauen()
-  local r = S.kasten(UIParent, "Frame", F.grund, F.rand, "PigeonPostFrame")
-  self.rahmen = r
+-- Echter Aufbau: Porträtrahmen des Spiels, darin die versenkte Fläche, unten die Reiter
+local function bauenEcht(r)
+  BREITE, HOEHE = 740, 500
+  X, OBEN, UNTEN = 16, -72, 18
+  B = BREITE - X - 18
   r:SetSize(BREITE, HOEHE)
-  local pos = ns.db.fenster
-  if pos and pos.punkt then r:SetPoint(pos.punkt, UIParent, pos.punkt, pos.x, pos.y) else r:SetPoint("CENTER") end
-  r:SetFrameStrata("HIGH")
-  r:SetClampedToScreen(true)
-  r:EnableMouse(true)
-  r:SetMovable(true)
-  r:RegisterForDrag("LeftButton")
-  r:SetScript("OnDragStart", function(self) self:StartMoving() end)
-  r:SetScript("OnDragStop", function(self)
-    self:StopMovingOrSizing()
-    local punkt, _, _, x, y = self:GetPoint()
-    ns.db.fenster = { punkt = punkt, x = x, y = y }
-  end)
-  if UISpecialFrames then table.insert(UISpecialFrames, "PigeonPostFrame") end
+  pcall(r.SetTitle, r, L.ADDON_NAME)
+  if r.SetPortraitToAsset then pcall(r.SetPortraitToAsset, r, S.ICON) end
+  local unter = S.schrift(r, "GameFontHighlightSmall")
+  unter:SetPoint("TOPLEFT", 66, -36)
+  unter:SetText(L.SUBTITLE)
+  local version = S.schrift(r, "GameFontDisableSmall")
+  version:SetPoint("TOPRIGHT", -14, -36)
+  version:SetText("by Darynus   v" .. ns.VERSION)
+  local innen = S.vorlage("Frame", r, "InsetFrameTemplate")
+  if innen then
+    innen:SetFrameLevel((r:GetFrameLevel() or 1) + 1)
+    innen:SetPoint("TOPLEFT", 4, -60)
+    innen:SetPoint("BOTTOMRIGHT", -6, 4)
+  end
+  -- Reiter unten am Fenster. Die neue Vorlage (mit LeftActive) steht mit Abstand nebeneinander,
+  -- die alte überlappt wie im Charakterfenster.
+  r.Tabs = {}
+  local vorher
+  for i, t in ipairs(REITER) do
+    local tab = S.vorlage("Button", r, "PanelTabButtonTemplate", "PigeonPostFrameTab" .. i)
+    if tab then
+      tab:SetText(t.text)
+    else
+      tab = S.textKnopf(r, t.text, 84, function() end)
+    end
+    if tab.SetID then tab:SetID(i) end
+    if vorher then
+      if tab.LeftActive then tab:SetPoint("TOPLEFT", vorher, "TOPRIGHT", 3, 0) else tab:SetPoint("LEFT", vorher, "RIGHT", -15, 0) end
+    else
+      tab:SetPoint("TOPLEFT", r, "BOTTOMLEFT", 12, 2)
+    end
+    if PanelTemplates_TabResize then pcall(PanelTemplates_TabResize, tab, 0) end
+    tab.schluessel = t.schluessel
+    tab:SetScript("OnClick", function()
+      if PlaySound and SOUNDKIT and SOUNDKIT.IG_CHARACTER_INFO_TAB then pcall(PlaySound, SOUNDKIT.IG_CHARACTER_INFO_TAB) end
+      W:Zeigen(t.schluessel)
+    end)
+    r.Tabs[i] = tab
+    vorher = tab
+  end
+  if PanelTemplates_SetNumTabs then pcall(PanelTemplates_SetNumTabs, r, #REITER) end
+  W.reiter = r.Tabs
+end
+
+-- Flacher Aufbau wie früher: Kopfzeile, Reiter links
+local function bauenFlach(r)
+  r:SetSize(BREITE, HOEHE)
   S.schatten(r)
   S.kopf(r, L.SUBTITLE)
 
@@ -691,7 +733,7 @@ function W:Bauen()
   leiste:SetPoint("BOTTOMLEFT", 1, 1)
   leiste:SetWidth(SEITE)
   leiste:SetColorTexture(rgba(F.seite))
-  self.reiter = {}
+  W.reiter = {}
   for i, t in ipairs(REITER) do
     local b = S.zeile(r)
     b:SetSize(SEITE, 30)
@@ -701,8 +743,31 @@ function W:Bauen()
     b.text:SetText(t.text)
     b.schluessel = t.schluessel
     b:SetScript("OnClick", function() S.klick() W:Zeigen(t.schluessel) end)
-    self.reiter[i] = b
+    W.reiter[i] = b
   end
+end
+
+function W:Bauen()
+  local r = S.vorlage("Frame", UIParent, "PortraitFrameTemplate", "PigeonPostFrame")
+  self.echt = r ~= nil and r.SetTitle ~= nil
+  if not self.echt then r = S.kasten(UIParent, "Frame", F.grund, F.rand, "PigeonPostFrame") end
+  self.rahmen = r
+  local pos = ns.db.fenster
+  if pos and pos.punkt then r:SetPoint(pos.punkt, UIParent, pos.punkt, pos.x, pos.y) else r:SetPoint("CENTER") end
+  r:SetFrameStrata("HIGH")
+  r:SetToplevel(true)
+  r:SetClampedToScreen(true)
+  r:EnableMouse(true)
+  r:SetMovable(true)
+  r:RegisterForDrag("LeftButton")
+  r:SetScript("OnDragStart", function(self) self:StartMoving() end)
+  r:SetScript("OnDragStop", function(self)
+    self:StopMovingOrSizing()
+    local punkt, _, _, x, y = self:GetPoint()
+    ns.db.fenster = { punkt = punkt, x = x, y = y }
+  end)
+  if UISpecialFrames then table.insert(UISpecialFrames, "PigeonPostFrame") end
+  if self.echt then bauenEcht(r) else bauenFlach(r) end
 
   bauenChars()
   bauenVerteilen()
@@ -720,10 +785,14 @@ function W:Zeigen(schluessel)
   if not self.rahmen then self:Bauen() end
   self.aktiv = schluessel or self.aktiv or "chars"
   for k, f in pairs(self.seiten) do f:SetShown(k == self.aktiv) end
-  for _, b in ipairs(self.reiter) do
+  for i, b in ipairs(self.reiter) do
     local an = b.schluessel == self.aktiv
-    b.wahl:SetShown(an)
-    b.text:SetTextColor(rgba(an and F.text or F.leise))
+    if self.echt then
+      if an and PanelTemplates_SetTab then pcall(PanelTemplates_SetTab, self.rahmen, i) end
+    else
+      b.wahl:SetShown(an)
+      b.text:SetTextColor(rgba(an and F.text or F.leise))
+    end
   end
   self.rahmen:Show()
   self:Aktualisieren()
