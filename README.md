@@ -22,6 +22,8 @@ You farm herbs and ore on one character, but your alchemist, blacksmith or bank 
 - **Looks like part of the game**: the Pigeon Post window and the mailbox panel now use the game's own window frame with a portrait, red buttons, checkboxes and radio buttons. The window has its tabs along the bottom.
 - **Material icons** for every category, like copper ore for Mining or peacebloom for Herbs.
 
+![Looks like part of the game](images/pigeonpost-5-leiste.png)
+
 ## New in 0.5
 
 - **Distribute between your crafters**: herbs to your alchemist, ore to your blacksmith, cloth to your tailor, everything else to your bank character. Pigeon Post plans all letters, you send them one click at a time.
