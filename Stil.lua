@@ -11,12 +11,13 @@ S.ICON = "Interface\\AddOns\\PigeonPost\\Media\\Icon"
 S.STERN = "Interface\\Common\\FavoritesIcon"
 S.PFEIL = "Interface\\Buttons\\UI-ScrollBar-ScrollDownButton-Up"
 
+-- Grund und Rand passen zu den Kästen des Spiels (Tooltip-Rand), Blau bleibt der Akzent
 S.F = {
-  grund   = { 0.05, 0.07, 0.11, 1 },
+  grund   = { 0.03, 0.03, 0.05, 0.95 },
   kopf    = { 0.09, 0.13, 0.21, 1 },
   seite   = { 0.07, 0.10, 0.15, 1 },
-  flaeche = { 0.10, 0.13, 0.19, 1 },
-  rand    = { 0.21, 0.27, 0.39, 1 },
+  flaeche = { 0.06, 0.06, 0.09, 0.92 },
+  rand    = { 0.62, 0.64, 0.70, 1 },
   akzent  = { 0.31, 0.61, 1.00, 1 },
   text    = { 0.92, 0.94, 0.97, 1 },
   leise   = { 0.56, 0.62, 0.72, 1 },
@@ -34,10 +35,18 @@ function S.heller(f)
   return { f[1] + (1 - f[1]) * 0.2, f[2] + (1 - f[2]) * 0.2, f[3] + (1 - f[3]) * 0.2, f[4] or 1 }
 end
 
+-- Kasten mit dem Rand der Tooltips und Auswahllisten des Spiels (gibt es in jedem Client).
+-- Der Rand lässt sich einfärben (Überfahren: Akzentfarbe).
+S.KASTEN = {
+  bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+  edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+  tile = true, tileSize = 16, edgeSize = 12,
+  insets = { left = 3, right = 3, top = 3, bottom = 3 },
+}
 function S.kasten(parent, typ, grund, rand, name)
   local f = CreateFrame(typ or "Frame", name, parent, "BackdropTemplate")
   if f.SetBackdrop then
-    f:SetBackdrop({ bgFile = S.WEISS, edgeFile = S.WEISS, edgeSize = 1 })
+    f:SetBackdrop(S.KASTEN)
     f:SetBackdropColor(rgba(grund or F.flaeche))
     f:SetBackdropBorderColor(rgba(rand or F.rand))
   end
@@ -446,11 +455,13 @@ function S.zeile(parent)
   z.hell:SetAlpha(0.5)
   z.hell:Hide()
 
+  -- Ausgewählt: die ganze Zeile leuchtet golden, wie ein angewählter Eintrag im Questlog
   z.wahl = z:CreateTexture(nil, "BACKGROUND", nil, 1)
-  z.wahl:SetPoint("TOPLEFT")
-  z.wahl:SetPoint("BOTTOMLEFT")
-  z.wahl:SetWidth(3)
-  z.wahl:SetColorTexture(rgba(F.akzent))
+  z.wahl:SetAllPoints()
+  z.wahl:SetTexture(S.ZEILE_LICHT)
+  if z.wahl.SetBlendMode then z.wahl:SetBlendMode("ADD") end
+  z.wahl:SetVertexColor(1, 0.82, 0.3)
+  z.wahl:SetAlpha(0.55)
   z.wahl:Hide()
   z:HookScript("OnEnter", function(self) self.hell:Show() end)
   z:HookScript("OnLeave", function(self) self.hell:Hide() end)
@@ -552,18 +563,26 @@ function S.aufklappen(anker, breite, eintraege, beiWahl)
 end
 
 -- Eingabefeld für kurze Texte (Profilnamen). beiEnter(text) beim Bestätigen mit Enter.
+-- Eingabefeld des Spiels (InputBoxTemplate), sonst ein Kasten wie die anderen
 function S.eingabe(parent, breite, maxZeichen, beiEnter)
-  local e = CreateFrame("EditBox", nil, parent, "BackdropTemplate")
-  e:SetSize(breite, 22)
-  if e.SetBackdrop then
-    e:SetBackdrop({ bgFile = S.WEISS, edgeFile = S.WEISS, edgeSize = 1 })
-    e:SetBackdropColor(rgba(F.flaeche))
-    e:SetBackdropBorderColor(rgba(F.rand))
+  local e = S.vorlage("EditBox", parent, "InputBoxTemplate")
+  local echt = e ~= nil
+  if e then
+    e:SetSize(breite - 6, 20)
+  else
+    e = CreateFrame("EditBox", nil, parent, "BackdropTemplate")
+    e:SetSize(breite, 22)
+    if e.SetBackdrop then
+      e:SetBackdrop(S.KASTEN)
+      e:SetBackdropColor(rgba(F.flaeche))
+      e:SetBackdropBorderColor(rgba(F.rand))
+    end
   end
   e:SetAutoFocus(false)
   e:SetMaxLetters(maxZeichen or 24)
   if GameFontHighlightSmall then e:SetFontObject(GameFontHighlightSmall) end
-  e:SetTextInsets(8, 8, 0, 0)
+  -- Die Vorlage des Spiels hat ihren Rand schon außen, der eigene Kasten braucht Abstand innen
+  if echt then e:SetTextInsets(0, 0, 0, 0) else e:SetTextInsets(8, 8, 0, 0) end
   e:SetScript("OnEnterPressed", function(self)
     self:ClearFocus()
     beiEnter(self:GetText() or "")

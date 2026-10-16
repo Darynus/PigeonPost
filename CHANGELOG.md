@@ -6,7 +6,8 @@
 - **The mailbox panel is a game window too**: portrait with the pigeon and a title bar, right next to the mail window. The X folds it away, as the « button did before.
 - **Material icons**: Send These and the Distribute page show a small example for every category, like copper ore for Mining or peacebloom for Herbs.
 - The game's own red buttons, checkboxes and radio buttons, in the window and in the mailbox panel. Headings in gold.
-- List rows light up like entries in the quest log.
+- List rows light up like entries in the quest log, the selected one in gold.
+- Fields, lists and letter slots use the game's own tooltip border, the name field is the game's input box.
 
 ## 0.5.0-beta (2026-10-14)
 
