@@ -170,6 +170,17 @@ local function bauenEinzeln(p)
       O:Aktualisieren()
     end)
     h.schluessel = k.schluessel
+    -- Kleines Beispiel-Material vor dem Namen (Symbol über die Gegenstands-ID, in jeder Sprache)
+    local bild = k.bild or (k.beispiel and C_Item and C_Item.GetItemIconByID and C_Item.GetItemIconByID(k.beispiel))
+    if bild then
+      h.icon = h:CreateTexture(nil, "ARTWORK")
+      h.icon:SetSize(14, 14)
+      h.icon:SetTexture(bild)
+      h.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+      h.icon:SetPoint("LEFT", h.box or h.kasten, "RIGHT", 2, 0)
+      h.name:ClearAllPoints()
+      h.name:SetPoint("LEFT", h.icon, "RIGHT", 4, 0)
+    end
     local spalte, reihe = (i - 1) % 2, math.floor((i - 1) / 2)
     h:SetPoint("TOPLEFT", RAND + spalte * ((INNEN + 6) / 2), -154 - reihe * 20)
     O.haken[i] = h
@@ -219,31 +230,65 @@ local function bauenVerteilen(p)
   O.planLeer:SetPoint("TOPLEFT", RAND, -156)
 end
 
+-- Die Leiste sieht aus wie ein Fenster des Spiels, wie das Postfenster daneben: Porträt mit
+-- Brieftaube, Titelleiste, versenkte Fläche. Das X klappt sie ein. Der Inhalt liegt dann 14 Pixel
+-- tiefer (unter dem Porträt). Fehlt die Vorlage, bleibt sie flach wie früher.
+local VERSATZ = 14
 function O:Bauen()
-  local p = S.kasten(MailFrame, "Frame", F.grund, F.rand)
+  local p = S.vorlage("Frame", MailFrame, "PortraitFrameTemplate")
+  self.echt = p ~= nil and p.SetTitle ~= nil
+  if not self.echt then p = S.kasten(MailFrame, "Frame", F.grund, F.rand) end
+  local versatz = self.echt and VERSATZ or 0
   self.panel = p
-  p:SetSize(BREITE, HOEHE)
+  p:SetSize(BREITE, HOEHE + versatz)
   p:EnableMouse(true)
-  S.schatten(p)
-  S.kopf(p, L.SUBTITLE_SHORT)
-
-  local zu = S.zeichenKnopf(p, "«", function() ns.db.eingeklappt = true O:Sichtbarkeit() end)
-  zu:SetPoint("TOPRIGHT", -6, -12)
-  S.tooltip(zu, L.COLLAPSE, L.COLLAPSE_HELP)
+  local einklappen = function() ns.db.eingeklappt = true O:Sichtbarkeit() end
   local optionen = S.textKnopf(p, L.OPTIONS, 60, function() ns.Fenster:Zeigen("einstellungen") end)
   optionen:SetHeight(20)
-  optionen:SetPoint("TOPRIGHT", -32, -13)
   S.tooltip(optionen, L.OPTIONS, L.OPTIONS_HELP)
+  if self.echt then
+    pcall(p.SetTitle, p, L.ADDON_NAME)
+    if p.SetPortraitToAsset then pcall(p.SetPortraitToAsset, p, S.ICON) end
+    local unter = S.schrift(p, "GameFontHighlightSmall")
+    unter:SetPoint("TOPLEFT", 62, -34)
+    unter:SetText(L.SUBTITLE_SHORT)
+    local innen = S.vorlage("Frame", p, "InsetFrameTemplate")
+    if innen then
+      innen:SetFrameLevel((p:GetFrameLevel() or 1) + 1)
+      innen:SetPoint("TOPLEFT", 4, -60)
+      innen:SetPoint("BOTTOMRIGHT", -6, 4)
+    end
+    local zu = type(p.CloseButton) == "table" and p.CloseButton or nil
+    if zu then
+      zu:SetScript("OnClick", einklappen)
+      S.tooltip(zu, L.COLLAPSE, L.COLLAPSE_HELP)
+    end
+    optionen:SetPoint("TOPRIGHT", -8, -30)
+  else
+    S.schatten(p)
+    S.kopf(p, L.SUBTITLE_SHORT)
+    local zu = S.zeichenKnopf(p, "«", einklappen)
+    zu:SetPoint("TOPRIGHT", -6, -12)
+    S.tooltip(zu, L.COLLAPSE, L.COLLAPSE_HELP)
+    optionen:SetPoint("TOPRIGHT", -32, -13)
+  end
+
+  -- Inhalt in einem eigenen Rahmen, beim echten Fenster um VERSATZ tiefer und über der Fläche
+  local c = CreateFrame("Frame", nil, p)
+  c:SetPoint("TOPLEFT", 0, -versatz)
+  c:SetPoint("BOTTOMRIGHT")
+  if self.echt then c:SetFrameLevel((p:GetFrameLevel() or 1) + 4) end
+  self.inhalt = c
 
   -- Einzelbrief oder Verteilen
-  self.art = S.segmente(p, INNEN, ARTEN, ns.ArtWaehlen)
+  self.art = S.segmente(c, INNEN, ARTEN, ns.ArtWaehlen)
   self.art:SetPoint("TOPLEFT", RAND, -52)
 
-  bauenEinzeln(p)
-  bauenVerteilen(p)
+  bauenEinzeln(c)
+  bauenVerteilen(c)
 
   -- Nur volle Stapel: im Einzelbrief für den Empfänger, beim Verteilen für das Profil
-  self.stapel = S.haken(p, INNEN, L.STACKS_FULL, L.STACKS_FULL_HELP, function(_, an)
+  self.stapel = S.haken(c, INNEN, L.STACKS_FULL, L.STACKS_FULL_HELP, function(_, an)
     if beschaeftigt() then return O:Aktualisieren() end
     local wert = an and "voll" or "alles"
     if verteilen() then
@@ -257,23 +302,23 @@ function O:Bauen()
   self.stapel:SetPoint("TOPLEFT", RAND, -242)
 
   -- Vorschau
-  self.vorschauTitel = S.ueberschrift(p, L.NEXT_LETTER)
+  self.vorschauTitel = S.ueberschrift(c, L.NEXT_LETTER)
   self.vorschauTitel:SetPoint("TOPLEFT", RAND, -272)
   self.vorschauTitel:SetWidth(INNEN - 50)
   self.vorschauTitel:SetJustifyH("LEFT")
   self.vorschauTitel:SetWordWrap(false)
-  self.anzahl = S.schrift(p, "GameFontHighlightSmall", F.leise)
+  self.anzahl = S.schrift(c, "GameFontHighlightSmall", F.leise)
   self.anzahl:SetPoint("TOPRIGHT", -RAND, -272)
-  local raster = CreateFrame("Frame", nil, p)
+  local raster = CreateFrame("Frame", nil, c)
   raster:SetSize(INNEN, 2 * SLOT + LUECKE)
   raster:SetPoint("TOPLEFT", RAND, -286)
   self.slots = {}
   for i = 1, 12 do self.slots[i] = slot(raster, i) end
   -- Infozeile darf zweizeilig sein, damit das Porto nicht abgeschnitten wird
-  self.info = S.absatz(p, INNEN, F.leise)
+  self.info = S.absatz(c, INNEN, F.leise)
   self.info:SetPoint("TOPLEFT", RAND, -366)
   -- Herausgenommene Gegenstände zurück in den Brief
-  self.zurueck = S.textKnopf(p, "", 62, function()
+  self.zurueck = S.textKnopf(c, "", 62, function()
     O.ausgelassen = {}
     O:Aktualisieren()
   end)
@@ -282,10 +327,10 @@ function O:Bauen()
   S.tooltip(self.zurueck, L.PUT_BACK, L.PUT_BACK_HELP)
 
   -- Knopf und Meldung
-  self.knopf = S.knopf(p, INNEN, 30)
+  self.knopf = S.knopf(c, INNEN, 30)
   self.knopf:SetPoint("TOPLEFT", RAND, -398)
   self.knopf:SetScript("OnClick", function() O:Klick() end)
-  self.meldung = S.absatz(p, INNEN, F.leise)
+  self.meldung = S.absatz(c, INNEN, F.leise)
   self.meldung:SetPoint("TOPLEFT", RAND, -434)
   self.meldung:SetJustifyH("CENTER")
 
@@ -331,7 +376,8 @@ function O:Anker()
   local neben = MailFrame
   if OpenMailFrame and OpenMailFrame:IsShown() then neben = OpenMailFrame end
   self.panel:ClearAllPoints()
-  self.panel:SetPoint("TOPLEFT", neben, "TOPRIGHT", 4, 0)
+  -- Das Porträt des echten Fensters ragt links heraus, deshalb etwas mehr Abstand
+  self.panel:SetPoint("TOPLEFT", neben, "TOPRIGHT", self.echt and 14 or 4, 0)
   self.lasche:ClearAllPoints()
   self.lasche:SetPoint("TOPLEFT", neben, "TOPRIGHT", 4, -40)
 end

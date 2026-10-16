@@ -162,7 +162,7 @@ function S.haken(parent, breite, text, hilfe, beiKlick)
     box:SetPoint("LEFT", -3, 0)
     box:EnableMouse(false)
     b.box = box
-    b.name = S.schrift(b, "GameFontHighlight")
+    b.name = S.schrift(b, "GameFontHighlightSmall")
     b.name:SetPoint("LEFT", box, "RIGHT", 2, 1)
     b.name:SetText(text)
     b.menge = S.schrift(b, "GameFontHighlightSmall", F.leise)

@@ -272,12 +272,23 @@ local function bauenVerteilen()
   S.ueberschrift(f, L.ROUTES):SetPoint("TOPLEFT", 0, -80)
   f.ziele = {}
   local zeilen = {}
-  for _, k in ipairs(ns.KATEGORIEN) do table.insert(zeilen, { schluessel = k.schluessel, text = k.name, hilfe = k.hilfe }) end
+  for _, k in ipairs(ns.KATEGORIEN) do
+    table.insert(zeilen, { schluessel = k.schluessel, text = k.name, hilfe = k.hilfe,
+      bild = k.bild or (k.beispiel and C_Item and C_Item.GetItemIconByID and C_Item.GetItemIconByID(k.beispiel)) })
+  end
   table.insert(zeilen, { schluessel = "rest", text = L.EVERYTHING_ELSE, hilfe = L.EVERYTHING_ELSE_HELP })
   for i, z in ipairs(zeilen) do
     local y = -96 - (i - 1) * 25
+    -- Beispiel-Material wie in der Leiste am Briefkasten
+    if z.bild then
+      local icon = f:CreateTexture(nil, "ARTWORK")
+      icon:SetSize(16, 16)
+      icon:SetPoint("TOPLEFT", 0, y - 3)
+      icon:SetTexture(z.bild)
+      icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    end
     local name = S.schrift(f, "GameFontHighlight", z.schluessel == "rest" and F.akzent or F.text)
-    name:SetPoint("TOPLEFT", 0, y - 4)
+    name:SetPoint("TOPLEFT", 22, y - 4)
     name:SetText(z.text)
     local a = S.auswahl(f, 280, function() return zielEintraege(z.schluessel ~= "rest") end, function(wert)
       local p = V.Aktiv()

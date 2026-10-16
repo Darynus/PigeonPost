@@ -18,22 +18,24 @@ ns.KLASSE = {
 ns.QUALITAET_GRUEN = 2
 
 -- Reihenfolge = Reihenfolge in der Oberfläche und im Brief
+-- beispiel: Gegenstand, dessen Symbol in der Leiste vor der Kategorie steht (Friedensblume,
+-- Kupfererz, Leinenstoff, leichtes Leder, seltsamer Staub, Eberfleisch), bild: festes Symbol
 ns.KATEGORIEN = {
-  { schluessel = "kraeuter", name = L.CAT_HERBS, kurz = L.CAT_HERBS, unterklasse = 9, standard = true,
+  { schluessel = "kraeuter", name = L.CAT_HERBS, kurz = L.CAT_HERBS, unterklasse = 9, standard = true, beispiel = 2447,
     hilfe = L.CAT_HERBS_HELP },
-  { schluessel = "bergbau", name = L.CAT_MINING, kurz = L.CAT_MINING, unterklasse = 7, standard = true,
+  { schluessel = "bergbau", name = L.CAT_MINING, kurz = L.CAT_MINING, unterklasse = 7, standard = true, beispiel = 2770,
     hilfe = L.CAT_MINING_HELP },
-  { schluessel = "stoff", name = L.CAT_CLOTH, kurz = L.CAT_CLOTH, unterklasse = 5, standard = false,
+  { schluessel = "stoff", name = L.CAT_CLOTH, kurz = L.CAT_CLOTH, unterklasse = 5, standard = false, beispiel = 2589,
     hilfe = L.CAT_CLOTH_HELP },
-  { schluessel = "leder", name = L.CAT_LEATHER, kurz = L.CAT_LEATHER, unterklasse = 6, standard = false,
+  { schluessel = "leder", name = L.CAT_LEATHER, kurz = L.CAT_LEATHER, unterklasse = 6, standard = false, beispiel = 2318,
     hilfe = L.CAT_LEATHER_HELP },
-  { schluessel = "verzauberung", name = L.CAT_ENCHANTING, kurz = L.CAT_ENCHANTING, unterklasse = 12, standard = false,
+  { schluessel = "verzauberung", name = L.CAT_ENCHANTING, kurz = L.CAT_ENCHANTING, unterklasse = 12, standard = false, beispiel = 10940,
     hilfe = L.CAT_ENCHANTING_HELP },
   -- Handelswaren Unterklasse 8 (Fleisch, Kochen). Roher Fisch ist essbar und damit Verbrauchsgut,
   -- deshalb gilt für die Liste dieser Kategorie auch Klasse 0.
-  { schluessel = "kochen", name = L.CAT_COOKING, kurz = L.CAT_COOKING, unterklasse = 8, standard = false,
+  { schluessel = "kochen", name = L.CAT_COOKING, kurz = L.CAT_COOKING, unterklasse = 8, standard = false, beispiel = 769,
     hilfe = L.CAT_COOKING_HELP, auchVerbrauch = true },
-  { schluessel = "gruen", name = L.CAT_GREEN, kurz = L.CAT_GREEN_SHORT, standard = false,
+  { schluessel = "gruen", name = L.CAT_GREEN, kurz = L.CAT_GREEN_SHORT, standard = false, bild = "Interface\\Icons\\INV_Chest_Chain",
     hilfe = L.CAT_GREEN_HELP },
 }
 
