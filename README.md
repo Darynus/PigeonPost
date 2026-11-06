@@ -11,11 +11,18 @@ Safe, with a preview, one click per letter.</p>
 <a href="https://github.com/Darynus/PigeonPost/issues">Report a bug</a>
 </p>
 
-> **Beta for WoW Forever.** Made for the Forever beta client 1.60.1.
+> **Made for WoW Forever** (client 1.60.1).
 
 You farm herbs and ore on one character, but your alchemist, blacksmith or bank character needs them? Open a mailbox, pick a character, click, and the letter is on its way. No typing names, no dragging twelve stacks by hand, no risk of mailing a stranger.
 
 ![One click, one letter](images/pigeonpost-1-ablauf.png)
+
+## New in 1.0
+
+- **Add single items**: on the Send Mail tab, right-click any item in your bags. It goes first in the next letter, and your ticked categories fill up the rest.
+- **Empty mailbox?** The Send Mail tab opens by itself, so a right-click works right away.
+- **Minimap button collectors** like MinimapButtonButton now pick up the Pigeon Post button.
+- **More materials**: more fish and gems are recognized, and all item lists were checked against the game data for WoW Forever.
 
 ## New in 0.6
 
@@ -40,6 +47,7 @@ You farm herbs and ore on one character, but your alchemist, blacksmith or bank 
 - **Only your own characters**: Pigeon Post lists the characters you have logged in with. There is no text field for names.
 - **Favorite recipient**: mark your bank character with a star. It is preselected on every character.
 - **Categories**: Herbs, Mining, Cloth, Leather, Enchanting, Cooking and Green gear.
+- **Single items**: right-click anything that is not soulbound in your bags on the Send Mail tab to add it to the next letter.
 - **Full stacks only** or **everything**, **Never send** list, **history**, **item check** and a **tooltip line** with the category.
 - **Works in every game language**: items are recognized by the game's own item data, never by names.
 
@@ -48,7 +56,7 @@ You farm herbs and ore on one character, but your alchemist, blacksmith or bank 
 ## Install
 
 - **CurseForge app**: search for *Pigeon Post* under World of Warcraft, Forever.
-- **By hand**: download the zip from CurseForge and put the `PigeonPost` folder into `World of Warcraft\_classic_beta_\Interface\AddOns`. Restart the game.
+- **By hand**: download the zip from CurseForge and put the `PigeonPost` folder into `World of Warcraft\_forever_\Interface\AddOns`. Restart the game.
 
 ## Commands
 

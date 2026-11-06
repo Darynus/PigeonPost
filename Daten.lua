@@ -2,7 +2,8 @@
 -- Erkennung in zwei Stufen (siehe Regeln.lua):
 --   1. Feste Liste bekannter Classic-IDs. Greift auch, wenn Forever keine Unterklassen setzt.
 --   2. Gegenstandsklasse und Unterklasse aus den Spieldaten (C_Item.GetItemInfoInstant).
--- Ob beides in Forever stimmt, zeigt /pigeon katalog.
+-- Ob beides in Forever stimmt, zeigt /pigeon katalog. Die Listen sind mit Wowhead Forever abgeglichen
+-- (6. Nov 2026). Neues Material aus Forever (Pyrit, Bauxit, Rosecap usw.) kommt über die Unterklasse.
 local ADDON, ns = ...
 local L = ns.L
 
@@ -59,7 +60,7 @@ local LISTEN = {
     -- Barren
     2840, 2841, 2842, 3575, 3576, 3577, 3859, 3860, 6037, 11371, 12359, 12360, 12655,
     -- Edelsteine
-    774, 818, 1206, 1210, 1529, 1705, 3864, 7909, 7910, 12361, 12363, 12364, 12799, 12800,
+    774, 818, 1206, 1210, 1529, 1705, 3864, 7909, 7910, 12361, 12363, 12364, 12799, 12800, 248819, 248820,
   },
   stoff = { 2589, 2592, 4306, 4338, 14047, 14256, 14342 },
   leder = { 783, 2318, 2319, 2934, 4232, 4234, 4235, 4304, 8169, 8170, 8171 },
@@ -73,7 +74,8 @@ local LISTEN = {
     3173, 3404, 3667, 3685, 3712, 3730, 3731, 4655, 5465, 5467, 5469, 5470, 5471, 5503, 5504, 6889,
     7974, 12037, 12184, 12202, 12203, 12204, 12205, 12206, 12207, 12208, 20424,
     -- Roher Fisch
-    4603, 6289, 6291, 6303, 6308, 6317, 6361, 6362, 8365, 13754, 13755, 13756, 13758, 13759, 13760, 13889, 13893,
+    4603, 6289, 6291, 6303, 6308, 6317, 6358, 6359, 6361, 6362, 6522, 8365, 13422, 13754, 13755, 13756, 13757,
+    13758, 13759, 13760, 13889, 13893, 251524, 286152,
     -- Gewürze
     2678, 2692, 3713,
   },

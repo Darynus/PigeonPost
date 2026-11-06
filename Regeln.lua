@@ -168,23 +168,29 @@ function Regeln.Auswahl(regel, ausgelassen)
   return Regeln.Sortieren(liste), menge, reste
 end
 
--- Sind zwei Briefe gleich: gleiche Gegenstände, gleiche Mengen, gleiche Taschenplätze?
+-- Sind zwei Briefe gleich: gleiche Gegenstände, gleiche Mengen, gleiche Plätze in Tasche oder Brief?
 function Regeln.GleicherBrief(a, b)
   if not a or not b or #a ~= #b then return false end
   for i = 1, #a do
     local x, y = a[i], b[i]
-    if x.itemID ~= y.itemID or x.anzahl ~= y.anzahl or x.tasche ~= y.tasche or x.platz ~= y.platz then
+    if x.itemID ~= y.itemID or x.anzahl ~= y.anzahl or x.tasche ~= y.tasche or x.platz ~= y.platz
+       or x.anhang ~= y.anhang then
       return false
     end
   end
   return true
 end
 
--- Der nächste Brief: höchstens 12 Anhänge. Dazu alle passenden Gegenstände und die Mengen.
-function Regeln.NaechsterBrief(regel, ausgelassen)
+-- Der nächste Brief: höchstens 12 Anhänge, zuerst was der Spieler selbst angehängt hat (eigen),
+-- dann die Auswahl. Dazu alle passenden Gegenstände und die Mengen.
+function Regeln.NaechsterBrief(regel, ausgelassen, eigen)
   local alle, menge, reste = Regeln.Auswahl(regel, ausgelassen)
   local brief = {}
-  for i = 1, math.min(#alle, Regeln.MaxAnhaenge()) do brief[i] = alle[i] end
+  for _, g in ipairs(eigen or {}) do table.insert(brief, g) end
+  for _, g in ipairs(alle) do
+    if #brief >= Regeln.MaxAnhaenge() then break end
+    table.insert(brief, g)
+  end
   return brief, alle, menge, reste
 end
 

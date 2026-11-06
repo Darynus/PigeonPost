@@ -2,7 +2,9 @@
 -- Zustände: bereit -> packen -> senden -> bereit
 -- Sicherungen vor dem Packen und noch einmal direkt vor dem Senden:
 --   Briefkasten offen, nicht im Kampf, Empfänger aus dem Register, kein Gold und keine
---   Nachnahme im Postfenster, keine fremden Anhänge, Anhänge genau wie in der Vorschau.
+--   Nachnahme im Postfenster, Anhänge genau wie in der Vorschau.
+-- Was der Spieler selbst angehängt hat (Rechtsklick in der Tasche beim Reiter "Send Mail"), gehört
+-- zum nächsten Brief, wenn er an einen Char geht (nicht beim Verteilen).
 -- SetSendMailMoney und SetSendMailCOD werden nie aufgerufen. Gold wird nur gelesen, um abzubrechen.
 local ADDON, ns = ...
 local L = ns.L
@@ -80,12 +82,14 @@ local function anhaenge()
   return t, n
 end
 
--- Stimmen die Anhänge genau mit dem Brief überein?
+-- Stimmen die Anhänge genau mit dem Brief überein? Jeder Gegenstand liegt auf seinem Platz:
+-- g.anhang (vom Spieler angehängt) oder g.ziel (von Pigeon Post angehängt).
 local function anhaengePassen(brief)
   local da, n = anhaenge()
   if n ~= #brief then return false end
-  for i, g in ipairs(brief) do
-    if not da[i] or da[i].itemID ~= g.itemID or da[i].anzahl ~= g.anzahl then return false end
+  for _, g in ipairs(brief) do
+    local d = da[g.anhang or g.ziel]
+    if not d or d.itemID ~= g.itemID or d.anzahl ~= g.anzahl then return false end
   end
   return true
 end
@@ -94,9 +98,29 @@ function Versand:Beschaeftigt()
   return self.zustand ~= "bereit"
 end
 
-function Versand:AnhaengeLeeren()
+-- Gegenstände im Postfenster, die der Spieler selbst angehängt hat. Sie stehen in keiner Tasche
+-- der Auswahl (das Spiel sperrt ihren Platz), die Daten kommen aus dem Postfenster.
+function Versand:EigeneAnhaenge()
+  local liste = {}
+  if self.zustand ~= "bereit" then return liste end
   for i = 1, ns.Regeln.MaxAnhaenge() do
-    if GetSendMailItem(i) then ClickSendMailItemButton(i, true) end
+    local name, itemID, icon, anzahl, qualitaet = GetSendMailItem(i)
+    if name or itemID then
+      local d = itemID and ns.Regeln.Daten(itemID) or {}
+      table.insert(liste, {
+        eigen = true, anhang = i, itemID = itemID, name = name or d.name, icon = icon or d.icon,
+        anzahl = anzahl or 1, qualitaet = qualitaet or d.qualitaet,
+        kategorie = (ns.Regeln.Kategorie(itemID, d)),
+      })
+    end
+  end
+  return liste
+end
+
+-- Nimmt wieder heraus, was Pigeon Post in diesen Brief gelegt hat. Eigene Anhänge des Spielers bleiben.
+function Versand:AnhaengeLeeren()
+  for _, g in ipairs(self.brief or {}) do
+    if g.ziel and GetSendMailItem(g.ziel) then ClickSendMailItemButton(g.ziel, true) end
   end
 end
 
@@ -119,11 +143,14 @@ function Versand:Klick(empfaenger, quelle, ausgelassen, vorschau)
   local ok, grund = self:Pruefen(empfaenger)
   if not ok then return status(grund, "fehler") end
 
+  local eigene = self:EigeneAnhaenge()
   local brief
   if type(quelle) == "function" then
+    -- Der Plan beim Verteilen kommt aus den Taschen und hat keinen Platz für Eigenes
+    if #eigene > 0 then return status(L.ERR_ALREADY_ATTACHED, "fehler") end
     brief = quelle()
   elseif type(quelle) == "table" then
-    brief = ns.Regeln.NaechsterBrief(quelle, ausgelassen)
+    brief = ns.Regeln.NaechsterBrief(quelle, ausgelassen, eigene)
   else
     brief = {}
   end
@@ -132,9 +159,10 @@ function Versand:Klick(empfaenger, quelle, ausgelassen, vorschau)
     return aktualisieren()
   end
   if #brief == 0 then return status(L.ERR_NOTHING, "hinweis") end
-
-  local _, schonDa = anhaenge()
-  if schonDa > 0 then return status(L.ERR_ALREADY_ATTACHED, "fehler") end
+  -- "Never send" gilt immer, auch für das, was der Spieler selbst angehängt hat
+  for _, g in ipairs(eigene) do
+    if ns.db.nie[g.itemID] then return status(string.format(L.ERR_NEVER_ATTACHED, g.name or g.itemID), "fehler") end
+  end
   if GetMoney() < #brief * PORTO then return status(L.ERR_POSTAGE, "fehler") end
 
   self:Packen(empfaenger, brief)
@@ -152,16 +180,23 @@ function Versand:Packen(empfaenger, brief)
   aktualisieren()
 
   ClearCursor()
-  for i, g in ipairs(brief) do
-    local info = C_Container.GetContainerItemInfo(g.tasche, g.platz)
-    if not info or info.itemID ~= g.itemID or (info.stackCount or 1) ~= g.anzahl or info.isLocked then
-      return self:Abbrechen(L.ERR_BAGS_CHANGED)
-    end
-    C_Container.PickupContainerItem(g.tasche, g.platz)
-    ClickSendMailItemButton(i)
-    if CursorHasItem and CursorHasItem() then
-      ClearCursor()
-      return self:Abbrechen(L.ERR_ATTACH)
+  -- Eigene Anhänge bleiben, wo sie sind. Alles andere kommt auf die freien Plätze.
+  local da = anhaenge()
+  local platz = 0
+  for _, g in ipairs(brief) do
+    if not g.anhang then
+      local info = C_Container.GetContainerItemInfo(g.tasche, g.platz)
+      if not info or info.itemID ~= g.itemID or (info.stackCount or 1) ~= g.anzahl or info.isLocked then
+        return self:Abbrechen(L.ERR_BAGS_CHANGED)
+      end
+      repeat platz = platz + 1 until not da[platz]
+      C_Container.PickupContainerItem(g.tasche, g.platz)
+      ClickSendMailItemButton(platz)
+      g.ziel = platz
+      if CursorHasItem and CursorHasItem() then
+        ClearCursor()
+        return self:Abbrechen(L.ERR_ATTACH)
+      end
     end
   end
 

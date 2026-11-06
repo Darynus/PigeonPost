@@ -1,5 +1,14 @@
 # Pigeon Post changelog
 
+## 1.0.0 (2026-11-06)
+
+- **Add single items**: on the Send Mail tab, right-click any item in your bags. It goes first in the next letter, with a colored border in the preview, and your ticked categories fill up the rest. Great for that one potion or piece of gear for your alt. Right-click it in the preview to put it back.
+- The panel shows you the way: on the Inbox tab, "Add single items" takes you to the Send Mail tab, and so does a click on an empty slot. With an empty mailbox the Send Mail tab opens by itself.
+- Items you attached yourself no longer stop the letter. If a letter fails, they stay attached, Pigeon Post only takes back what it put in itself. With Distribute they stay out of the plan, the panel tells you.
+- *Never send* still wins: an item from that list stops the letter, even if you attached it yourself.
+- **Fix**: minimap button collectors like MinimapButtonButton now pick up the Pigeon Post button.
+- More fish and gems are recognized (Deviate Fish, Whimsyfin, Oily Blackmouth, Stonescale Eel, Torbernite, Fel Crystal and others). All item lists were checked against the game data for WoW Forever.
+
 ## 0.6.0-beta (2026-10-16)
 
 - **The window now looks like a real WoW window**: portrait frame with the pigeon, title bar, inset panel and tabs along the bottom, like the game's own windows.

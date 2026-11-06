@@ -23,6 +23,9 @@ local ARTEN = {
 local function ich() return UnitGUID("player") end
 local function beschaeftigt() return ns.Versand:Beschaeftigt() end
 local function verteilen() return ns.Verteilen.An() end
+-- Reiter "Send Mail" offen? Nur dann legt ein Rechtsklick in der Tasche den Gegenstand in den Brief.
+-- Beim Reiter "Inbox" benutzt das Spiel ihn. Das lässt sich von einem Add-on aus nicht abfangen.
+local function sendeReiter() return SendMailFrame ~= nil and SendMailFrame:IsShown() end
 
 -- Allererster Brief: einmal nachfragen. "Yes" ist dann selbst der Klick für genau diesen Brief.
 local function ersterBrief()
@@ -70,21 +73,38 @@ local function slot(parent, i)
   s.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
   s.zahl = s:CreateFontString(nil, "OVERLAY", "NumberFontNormal")
   s.zahl:SetPoint("BOTTOMRIGHT", -2, 2)
-  s:RegisterForClicks("RightButtonUp")
+  s:RegisterForClicks("LeftButtonUp", "RightButtonUp")
   s:HookScript("OnEnter", function(self)
     local g = self.gegenstand
-    if not g then return end
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-    if not pcall(GameTooltip.SetBagItem, GameTooltip, g.tasche, g.platz) then GameTooltip:SetText(g.name or "?") end
-    GameTooltip:AddLine(" ")
+    if not g then
+      -- Leeres Feld: sagt, wie ein einzelner Gegenstand in den Brief kommt
+      if verteilen() or beschaeftigt() then return GameTooltip:Hide() end
+      GameTooltip:SetText(L.BTN_ADD_ITEMS, 1, 1, 1)
+      GameTooltip:AddLine(sendeReiter() and L.EMPTY_SLOT_SEND or L.EMPTY_SLOT_INBOX, F.leise[1], F.leise[2], F.leise[3], true)
+      return GameTooltip:Show()
+    end
+    if g.eigen then
+      if not pcall(GameTooltip.SetSendMailItem, GameTooltip, g.anhang) then GameTooltip:SetText(g.name or "?") end
+      GameTooltip:AddLine(" ")
+      GameTooltip:AddLine(L.ADDED_BY_YOU, F.akzent[1], F.akzent[2], F.akzent[3])
+    else
+      if not pcall(GameTooltip.SetBagItem, GameTooltip, g.tasche, g.platz) then GameTooltip:SetText(g.name or "?") end
+      GameTooltip:AddLine(" ")
+    end
     GameTooltip:AddLine(L.RIGHTCLICK_REMOVE, F.leise[1], F.leise[2], F.leise[3])
     GameTooltip:AddLine(L.SHIFT_RIGHTCLICK_NEVER, F.leise[1], F.leise[2], F.leise[3])
     GameTooltip:Show()
   end)
   s:HookScript("OnLeave", function() GameTooltip:Hide() end)
   -- Rechtsklick: nur aus diesem Brief nehmen. Umschalt+Rechtsklick: nie wieder senden.
+  -- Linksklick auf ein leeres Feld: zum Reiter "Send Mail", um Gegenstände hinzuzufügen.
   s:SetScript("OnClick", function(self, taste)
-    if taste ~= "RightButton" or not self.gegenstand then return end
+    if not self.gegenstand then
+      if taste == "LeftButton" then O:ZumSendeReiter() end
+      return
+    end
+    if taste ~= "RightButton" then return end
     if IsShiftKeyDown and IsShiftKeyDown() then O:NieSenden(self.gegenstand) else O:Auslassen(self.gegenstand) end
     GameTooltip:Hide()
   end)
@@ -94,7 +114,8 @@ local function slot(parent, i)
       self.icon:SetTexture(g.icon)
       self.icon:Show()
       self.zahl:SetText(g.anzahl > 1 and tostring(g.anzahl) or "")
-      S.randFarbe(self, S.qualitaetsFarbe(g.qualitaet))
+      -- Selbst angehängt: Rand in der Akzentfarbe, sonst in der Farbe der Qualität
+      S.randFarbe(self, g.eigen and F.akzent or S.qualitaetsFarbe(g.qualitaet))
     else
       self.icon:Hide()
       self.zahl:SetText("")
@@ -339,6 +360,11 @@ function O:Bauen()
   self.meldung = S.absatz(c, INNEN, F.leise)
   self.meldung:SetPoint("TOPLEFT", RAND, -434)
   self.meldung:SetJustifyH("CENTER")
+  -- Beim Reiter "Inbox" statt des Hinweises: ein Klick führt zum Reiter "Send Mail"
+  self.einzelKnopf = S.textKnopf(c, L.BTN_ADD_ITEMS, 130, function() O:ZumSendeReiter() end)
+  self.einzelKnopf:SetHeight(20)
+  self.einzelKnopf:SetPoint("TOP", 0, -432)
+  S.tooltip(self.einzelKnopf, L.BTN_ADD_ITEMS, L.BTN_ADD_ITEMS_HELP)
 
   -- Eingeklappt: kleiner Knopf mit Icon am Postfenster
   local lasche = S.kasten(MailFrame, "Button", F.grund, F.rand)
@@ -368,6 +394,11 @@ function O:Bauen()
     if not (MailFrame and MailFrame:IsShown()) then ns.Versand:BriefkastenZu() end
   end)
   MailFrame:HookScript("OnHide", function() O.sitzung = false end)
+  -- Reiter gewechselt: der Hinweis unter dem Knopf hängt daran
+  if SendMailFrame and SendMailFrame.HookScript then
+    SendMailFrame:HookScript("OnShow", function() O:Zeile() end)
+    SendMailFrame:HookScript("OnHide", function() O:Zeile() end)
+  end
 
   -- Ein geöffneter Brief erscheint rechts neben dem Posteingang. Dann rückt die Leiste daneben.
   if OpenMailFrame and OpenMailFrame.HookScript then
@@ -468,9 +499,36 @@ end
 
 function O:Status(text, art)
   self.statusText, self.statusArt = text, art
+  self:Zeile()
+end
+
+-- Zeile unter dem großen Knopf: eine Meldung, sonst der Hinweis, wie einzelne Gegenstände in den
+-- Brief kommen. Beim Reiter "Inbox" steht dort ein Knopf, der zum Reiter "Send Mail" führt.
+function O:Zeile()
   if not self.meldung then return end
-  self.meldung:SetText(text or "")
+  local text, art, knopf = self.statusText, self.statusArt, false
+  if not text or text == "" then
+    art = "leise"
+    if beschaeftigt() then
+      text = ""
+    elseif verteilen() then
+      text = #ns.Versand:EigeneAnhaenge() > 0 and L.HINT_SPLIT_ATTACHED or ""
+    elseif not self.empfaenger then
+      text = ""
+    elseif sendeReiter() then
+      text = L.HINT_RIGHTCLICK
+    else
+      text, knopf = "", true
+    end
+  end
+  self.meldung:SetText(text)
   self.meldung:SetTextColor(rgba(F[art] or F.leise))
+  self.einzelKnopf:SetShown(knopf)
+end
+
+-- Zum Reiter "Send Mail". Dort legt ein Rechtsklick in der Tasche den Gegenstand in den Brief.
+function O:ZumSendeReiter()
+  if not sendeReiter() and MailFrameTab2 then MailFrameTab2:Click() end
 end
 
 -- Empfänger dieser Sitzung: zuerst die Wahl in dieser Sitzung, dann der Favorit,
@@ -508,9 +566,11 @@ local function anzeigenEinzeln(self)
     w.info:SetText(L.NO_CHARS_HINT)
   end
 
+  -- Was der Spieler selbst angehängt hat, kommt zuerst in den Brief
+  local eigene = ns.Versand:EigeneAnhaenge()
   local brief, alle, menge, reste
   if self.regel then
-    brief, alle, menge, reste = ns.Regeln.NaechsterBrief(self.regel, self.ausgelassen)
+    brief, alle, menge, reste = ns.Regeln.NaechsterBrief(self.regel, self.ausgelassen, eigene)
   else
     brief, alle, menge, reste = {}, {}, {}, 0
   end
@@ -519,7 +579,8 @@ local function anzeigenEinzeln(self)
     h.menge:SetText(menge[h.schluessel] and tostring(menge[h.schluessel]) or "")
   end
   self.stapel:Setzen(not self.regel or self.regel.stapel ~= "alles")
-  return brief, #alle, empf and 1 or 0, reste, math.ceil(#alle / ns.Regeln.MaxAnhaenge())
+  local gesamt = #alle + #eigene
+  return brief, gesamt, empf and 1 or 0, reste, math.ceil(gesamt / ns.Regeln.MaxAnhaenge())
 end
 
 -- Verteilen: Profil, Briefe je Empfänger, nächster Brief des Plans
@@ -625,6 +686,7 @@ function O:Aktualisieren()
   else
     k:Aussehen(string.format(split and L.BTN_SPLIT_SEND or L.BTN_SEND, name), F.akzent, true)
   end
+  self:Zeile()
 end
 
 -- Der große Knopf: genau ein Brief
@@ -645,13 +707,19 @@ function O:NieSenden(g)
   if beschaeftigt() then return end
   ns.db.nie[g.itemID] = g.name or tostring(g.itemID)
   ns.melde(string.format(L.MSG_NEVER, g.name or g.itemID))
+  if g.eigen then ClickSendMailItemButton(g.anhang, true) end
   self:Aktualisieren()
   if ns.Fenster then ns.Fenster:Aktualisieren() end
 end
 
--- Nur aus diesem Brief nehmen, bis der Briefkasten wieder zu ist
+-- Nur aus diesem Brief nehmen, bis der Briefkasten wieder zu ist. Selbst Angehängtes geht zurück
+-- in die Tasche.
 function O:Auslassen(g)
   if beschaeftigt() then return end
+  if g.eigen then
+    ClickSendMailItemButton(g.anhang, true)
+    return self:Aktualisieren()
+  end
   self.ausgelassen = self.ausgelassen or {}
   self.ausgelassen[ns.Regeln.Platz(g)] = true
   self:Aktualisieren()
@@ -666,6 +734,7 @@ function O:Oeffnen()
   if not self.sitzung then
     self.sitzung = true
     self.ausgelassen = {}
+    self.postfachGeprueft = false
     self:Status("", "hinweis")
     -- Ohne Empfänger (nur ein Char) erst einmal eingeklappt, mit Hinweis im Tooltip
     local keiner = #ns.Register:Empfaenger() == 0
@@ -690,7 +759,24 @@ function O:Bald()
   end)
 end
 
+-- Leeres Postfach: gleich zum Reiter "Send Mail", einmal je Besuch. Dann geht der Rechtsklick in
+-- der Tasche sofort. Kurz warten, denn die erste Meldung kann kommen, bevor die Post geladen ist.
+-- Nur wenn die Leiste offen ist: Wer sie eingeklappt hat, bekommt das Postfenster wie immer.
+function O:PostfachPruefen()
+  if self.postfachGeprueft or not (self.panel and self.panel:IsVisible()) then return end
+  if not (GetInboxNumItems and C_Timer and C_Timer.After) then return end
+  self.postfachGeprueft = true
+  C_Timer.After(0.3, function()
+    if not (O.panel and O.panel:IsVisible()) or MailFrame.inboxBeingChecked then return end
+    local anzahl, gesamt = GetInboxNumItems()
+    if (anzahl or 0) > 0 or (gesamt or 0) > 0 or (HasNewMail and HasNewMail()) then return end
+    O:ZumSendeReiter()
+  end)
+end
+
 ns.Ereignis("MAIL_SHOW", function() O:Oeffnen() end)
+ns.Ereignis("MAIL_INBOX_UPDATE", function() O:PostfachPruefen() end)
+ns.Ereignis("MAIL_SEND_INFO_UPDATE", function() O:Bald() end)
 ns.Ereignis("BAG_UPDATE_DELAYED", function() O:Bald() end)
 ns.Ereignis("GET_ITEM_INFO_RECEIVED", function() O:Bald() end)
 
