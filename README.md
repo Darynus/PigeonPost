@@ -19,7 +19,7 @@ You farm herbs and ore on one character, but your alchemist, blacksmith or bank 
 
 ## New in 1.1
 
-- **Send gold to your alts**: Send gold next to the recipient fills in the Send Mail tab for that character. Type the amount into the game's gold field and send it with the game's Send button. Pigeon Post itself never sends gold.
+- **Send gold to your alts**: type the amount into the Gold row. It goes with the next letter, for example with your materials and the deposit for the auction house, or on its own. Pigeon Post asks before it sends gold.
 - **What's new** window after updates, and square minimaps work.
 
 ## New in 1.0
@@ -80,7 +80,7 @@ You farm herbs and ore on one character, but your alchemist, blacksmith or bank 
 
 ## Safety
 
-- It **never sends gold or COD**. If there is money in the mail window, it stops. Send gold only fills in the name of your alt, the gold goes with the game's own Send button.
+- It **sends gold only when you type it into the Gold row and confirm it**, only to your own characters, and never COD. If there is money in the game's mail window, it stops.
 - It only mails characters **from your own list**, on **your realm and faction**, with their **full first and last name**.
 - **One click sends at most one letter.** Nothing happens on its own when you open a mailbox.
 - **You only send what you saw**: every attachment is compared with the preview before the letter goes out.

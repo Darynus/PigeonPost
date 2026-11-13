@@ -2,10 +2,12 @@
 -- Zustände: bereit -> packen -> senden -> bereit
 -- Sicherungen vor dem Packen und noch einmal direkt vor dem Senden:
 --   Briefkasten offen, nicht im Kampf, Empfänger aus dem Register, kein Gold und keine
---   Nachnahme im Postfenster, Anhänge genau wie in der Vorschau.
+--   Nachnahme im Postfenster des Spiels, Anhänge genau wie in der Vorschau.
 -- Was der Spieler selbst angehängt hat (Rechtsklick in der Tasche beim Reiter "Send Mail"), gehört
 -- zum nächsten Brief, wenn er an einen Char geht (nicht beim Verteilen).
--- SetSendMailMoney und SetSendMailCOD werden nie aufgerufen. Gold wird nur gelesen, um abzubrechen.
+-- Gold (Patrick, 13. Nov, neue Regel 1): nur der Betrag, den der Spieler in Pigeon Post eingetippt
+-- und in der Rückfrage bestätigt hat, nur an Chars aus dem Register, mit diesem einen Brief.
+-- SetSendMailMoney steht nur hier, direkt vor SendMail. SetSendMailCOD wird nie aufgerufen.
 local ADDON, ns = ...
 local L = ns.L
 
@@ -40,9 +42,11 @@ local function protokoll(empfaenger, brief, ergebnis, fehler)
   return eintrag
 end
 
--- Betreff: "Pigeon Post: Herbs, Mining". Das Betreff-Feld des Spiels fasst 64 Zeichen.
+-- Betreff: "Pigeon Post: Herbs, Mining", mit Gold ", Gold", nur Gold "Pigeon Post: Gold".
+-- Das Betreff-Feld des Spiels fasst 64 Zeichen.
 local BETREFF_MAX = 64
-local function betreff(brief)
+local function betreff(brief, gold)
+  if #brief == 0 and (gold or 0) > 0 then return L.SUBJECT_GOLD end
   local namen, gesehen = {}, {}
   for _, g in ipairs(brief) do
     local name = g.kategorie and ns.KATEGORIE[g.kategorie].kurz or L.SUBJECT_ITEMS
@@ -51,6 +55,7 @@ local function betreff(brief)
       table.insert(namen, name)
     end
   end
+  if (gold or 0) > 0 then table.insert(namen, L.SUBJECT_GOLD_PART) end
   local text = L.SUBJECT_PREFIX .. table.concat(namen, ", ")
   if #text > BETREFF_MAX then text = string.sub(text, 1, BETREFF_MAX) end
   return text
@@ -137,8 +142,11 @@ end
 -- Taschen rechnet (Verteilen). ausgelassen: Gegenstände, die der Spieler aus diesem Brief genommen hat.
 -- vorschau: der Brief, den die Leiste gerade zeigt. Weicht der echte Brief davon ab, wird nichts
 -- gepackt: Der Spieler soll nur senden, was er gesehen hat.
-function Versand:Klick(empfaenger, quelle, ausgelassen, vorschau)
+function Versand:Klick(empfaenger, quelle, ausgelassen, vorschau, gold)
   if self.zustand ~= "bereit" then return end
+  gold = math.floor(tonumber(gold) or 0)
+  -- Gold nur im Einzelbrief, nie beim Verteilen
+  if gold > 0 and type(quelle) ~= "table" then return status(L.ERR_GOLD_SPLIT, "fehler") end
 
   local ok, grund = self:Pruefen(empfaenger)
   if not ok then return status(grund, "fehler") end
@@ -158,13 +166,16 @@ function Versand:Klick(empfaenger, quelle, ausgelassen, vorschau)
     status(L.ERR_PREVIEW_CHANGED, "hinweis")
     return aktualisieren()
   end
-  if #brief == 0 then return status(L.ERR_NOTHING, "hinweis") end
+  if #brief == 0 and gold <= 0 then return status(L.ERR_NOTHING, "hinweis") end
   -- "Never send" gilt immer, auch für das, was der Spieler selbst angehängt hat
   for _, g in ipairs(eigene) do
     if ns.db.nie[g.itemID] then return status(string.format(L.ERR_NEVER_ATTACHED, g.name or g.itemID), "fehler") end
   end
-  if GetMoney() < #brief * PORTO then return status(L.ERR_POSTAGE, "fehler") end
+  if GetMoney() < math.max(1, #brief) * PORTO + gold then
+    return status(gold > 0 and L.ERR_GOLD_MONEY or L.ERR_POSTAGE, "fehler")
+  end
 
+  self.gold = gold
   self:Packen(empfaenger, brief)
 end
 
@@ -227,10 +238,23 @@ function Versand:Senden()
   self.adresse = ns.Register:Adresse(self.empfaenger)
   if not self.adresse then return self:Abbrechen(L.ERR_RECIPIENT) end
 
+  -- Gold: genau der bestätigte Betrag, gesetzt direkt vor dem Senden. Nimmt das Spiel ihn nicht an,
+  -- geht nichts raus.
+  local gold = self.gold or 0
+  if gold > 0 then
+    local preis = GetSendMailPrice and GetSendMailPrice() or PORTO
+    if GetMoney() < gold + preis then return self:Abbrechen(L.ERR_GOLD_MONEY) end
+    local ok, gesetzt = pcall(SetSendMailMoney, gold)
+    if not ok or gesetzt == false or (GetSendMailMoney and GetSendMailMoney() ~= gold) then
+      pcall(SetSendMailMoney, 0)
+      return self:Abbrechen(L.ERR_GOLD_SET)
+    end
+  end
+
   self.zustand = "senden"
   self.sendeNr = (self.sendeNr or 0) + 1
   local nr = self.sendeNr
-  SendMail(self.adresse, betreff(self.brief), "")
+  SendMail(self.adresse, betreff(self.brief, gold), "")
   status(string.format(L.MSG_SENDING, self.adresse), "hinweis")
   aktualisieren()
 
@@ -253,6 +277,7 @@ end
 function Versand:Fertig(text, art)
   self.zustand = "bereit"
   self.brief = nil
+  self.gold = nil
   status(text, art)
   aktualisieren()
 end
@@ -278,10 +303,17 @@ ns.Ereignis("MAIL_SEND_SUCCESS", function()
     return Versand:Fertig(text, "erfolg")
   end
   if Versand.zustand ~= "senden" then return end
-  local text = string.format(L.MSG_SENT, ns.anhaenge(#Versand.brief), Versand.adresse or ns.Register:Anzeigename(Versand.empfaenger))
-  protokoll(Versand.empfaenger, Versand.brief, "gesendet")
+  local gold = Versand.gold or 0
+  local was = ns.anhaenge(#Versand.brief)
+  if gold > 0 then
+    was = #Versand.brief > 0 and string.format(L.ITEMS_AND_GOLD, was, ns.geld(gold)) or ns.geld(gold)
+  end
+  local text = string.format(L.MSG_SENT, was, Versand.adresse or ns.Register:Anzeigename(Versand.empfaenger))
+  local eintrag = protokoll(Versand.empfaenger, Versand.brief, "gesendet")
+  if gold > 0 then eintrag.gold = gold end
   ns.melde(text)
   Versand:Fertig(text, "erfolg")
+  if gold > 0 and ns.Oberflaeche then ns.Oberflaeche:GoldGesendet() end
 end)
 
 -- Fehlermeldung des Servers merken (z. B. unbekannter Empfänger), damit sie im Protokoll steht.
@@ -312,6 +344,8 @@ ns.Ereignis("MAIL_FAILED", function()
   local fehler = Versand.serverFehler
   protokoll(Versand.empfaenger, Versand.brief, "fehlgeschlagen", fehler)
   Versand:AnhaengeLeeren()
+  -- Gesetztes Gold zurücknehmen, damit es nicht im Postfenster stehen bleibt
+  if (Versand.gold or 0) > 0 and SetSendMailMoney then pcall(SetSendMailMoney, 0) end
   Versand:Fertig(fehler and (L.ERR_FAILED .. " (" .. fehler .. ")") or L.ERR_FAILED, "fehler")
 end)
 

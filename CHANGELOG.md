@@ -2,7 +2,7 @@
 
 ## 1.1.0 (2026-11-13)
 
-- **Send gold to your alts**: the Send gold button next to the recipient opens the Send Mail tab for that character, with the full name filled in and Send Money picked. Type the amount into the game's gold field and send it with the game's Send button, the game asks you to confirm. Pigeon Post itself still never sends gold.
+- **Send gold to your alts**: type the amount into the new Gold row below the preview. It goes with the next letter, for example with your materials and the deposit for the auction house, or on its own. Pigeon Post asks before it sends, with the amount and the name, and only to your own characters. Never COD.
 - **What's new** window once after each update. `/pigeon news` shows it again.
 - Square minimaps: the minimap button follows the square edge.
 

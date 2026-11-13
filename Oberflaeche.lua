@@ -8,7 +8,7 @@ local F, rgba = S.F, S.rgba
 local O = {}
 ns.Oberflaeche = O
 
-local BREITE, HOEHE, RAND = 250, 466, 10
+local BREITE, HOEHE, RAND = 250, 494, 10
 local INNEN = BREITE - 2 * RAND
 local SLOT, LUECKE = 35, 4
 local ZEILE = 34
@@ -26,6 +26,69 @@ local function verteilen() return ns.Verteilen.An() end
 -- Reiter "Send Mail" offen? Nur dann legt ein Rechtsklick in der Tasche den Gegenstand in den Brief.
 -- Beim Reiter "Inbox" benutzt das Spiel ihn. Das lässt sich von einem Add-on aus nicht abfangen.
 local function sendeReiter() return SendMailFrame ~= nil and SendMailFrame:IsShown() end
+
+-- Gold für den nächsten Brief (Patrick, 13. Nov: „bei seinen eigenen Twinks sollte das möglich
+-- sein“, zum Beispiel Material und etwas Gold fürs Auktionshaus). Mit den Münzfeldern des Spiels
+-- (MoneyInputFrameTemplate), fehlt die Vorlage: drei eigene Felder mit den Münzen des Spiels.
+-- Kupfer() liefert den Betrag, Leeren() setzt ihn auf 0.
+local MUENZEN = { "Interface\\MoneyFrame\\UI-GoldIcon", "Interface\\MoneyFrame\\UI-SilverIcon",
+  "Interface\\MoneyFrame\\UI-CopperIcon" }
+local function goldFeld(parent)
+  local f = S.vorlage("Frame", parent, "MoneyInputFrameTemplate", "PigeonPostGold")
+  if f and type(f.gold) == "table" and MoneyInputFrame_GetCopper then
+    function f:Kupfer()
+      local ok, k = pcall(MoneyInputFrame_GetCopper, self)
+      return ok and tonumber(k) or 0
+    end
+    function f:Leeren() if MoneyInputFrame_ResetMoney then pcall(MoneyInputFrame_ResetMoney, self) end end
+    if MoneyInputFrame_SetOnValueChangedFunc then
+      pcall(MoneyInputFrame_SetOnValueChangedFunc, f, function() O:Aktualisieren() end)
+    end
+    return f
+  end
+  if f then f:Hide() end
+  f = CreateFrame("Frame", nil, parent)
+  f:SetSize(170, 22)
+  f.felder = {}
+  local x = 0
+  for i, breite in ipairs({ 56, 34, 34 }) do
+    local e = S.eingabe(f, breite, i == 1 and 6 or 2, function() O:Aktualisieren() end)
+    e:SetPoint("LEFT", x, 0)
+    if e.SetNumeric then e:SetNumeric(true) end
+    e:HookScript("OnTextChanged", function() O:Aktualisieren() end)
+    local m = f:CreateTexture(nil, "ARTWORK")
+    m:SetSize(13, 13)
+    m:SetPoint("LEFT", e, "RIGHT", 2, 0)
+    m:SetTexture(MUENZEN[i])
+    x = x + breite + 18
+    f.felder[i] = e
+  end
+  function f:Kupfer()
+    local g = tonumber(self.felder[1]:GetText() or "") or 0
+    local s = math.min(tonumber(self.felder[2]:GetText() or "") or 0, 99)
+    local c = math.min(tonumber(self.felder[3]:GetText() or "") or 0, 99)
+    return math.max(0, math.floor(g) * 10000 + math.floor(s) * 100 + math.floor(c))
+  end
+  function f:Leeren() for _, e in ipairs(self.felder) do e:SetText("") end end
+  return f
+end
+
+-- Gold geht nie ohne Rückfrage: Betrag und Empfänger stehen darin. "Yes" ist der Klick für genau
+-- diesen Brief mit genau diesem Betrag.
+local function goldFragen(betrag, name)
+  if not (StaticPopup_Show and StaticPopupDialogs) then return end
+  StaticPopupDialogs.PIGEONPOST_GOLD = StaticPopupDialogs.PIGEONPOST_GOLD or {
+    text = L.CONFIRM_GOLD,
+    button1 = L.YES,
+    button2 = L.NO,
+    OnAccept = function(_, daten)
+      O.goldBestaetigt = daten
+      O:Klick()
+    end,
+    timeout = 0, whileDead = true, hideOnEscape = true, preferredIndex = 3,
+  }
+  StaticPopup_Show("PIGEONPOST_GOLD", ns.geld(betrag), name, betrag)
+end
 
 -- Allererster Brief: einmal nachfragen. "Yes" ist dann selbst der Klick für genau diesen Brief.
 local function ersterBrief()
@@ -159,11 +222,6 @@ local function bauenEinzeln(p)
   O.einzeln = e
   e:SetAllPoints()
   S.ueberschrift(e, L.RECIPIENT):SetPoint("TOPLEFT", RAND, -80)
-  -- Gold an diesen Char: Pigeon Post trägt nur den Empfänger ein, Betrag und Senden im Spiel
-  O.goldKnopf = S.textKnopf(e, L.BTN_GOLD, 84, function() O:GoldVorbereiten() end)
-  O.goldKnopf:SetHeight(18)
-  O.goldKnopf:SetPoint("TOPRIGHT", -RAND, -76)
-  S.tooltip(O.goldKnopf, L.BTN_GOLD, L.BTN_GOLD_HELP)
   O.wahl = wahlFeld(e, -94, function()
     if #ns.Register:Empfaenger() == 0 then return ns.Fenster:Zeigen("chars") end
     if O.liste:IsShown() then O.liste:Hide() else O:ListeZeigen() end
@@ -358,17 +416,29 @@ function O:Bauen()
   self.zurueck:SetPoint("TOPRIGHT", -RAND, -363)
   S.tooltip(self.zurueck, L.PUT_BACK, L.PUT_BACK_HELP)
 
+  -- Gold für den nächsten Brief, nur im Einzelbrief
+  self.goldZeile = CreateFrame("Frame", nil, c)
+  self.goldZeile:SetSize(INNEN, 22)
+  self.goldZeile:SetPoint("TOPLEFT", RAND, -396)
+  self.goldZeile:EnableMouse(true)
+  local goldText = S.schrift(self.goldZeile, "GameFontNormalSmall")
+  goldText:SetPoint("LEFT", 0, 0)
+  goldText:SetText(L.GOLD_ROW)
+  S.tooltip(self.goldZeile, L.GOLD_ROW, L.GOLD_ROW_HELP)
+  self.goldFeld = goldFeld(self.goldZeile)
+  self.goldFeld:SetPoint("LEFT", 40, 0)
+
   -- Knopf und Meldung
   self.knopf = S.knopf(c, INNEN, 30)
-  self.knopf:SetPoint("TOPLEFT", RAND, -398)
+  self.knopf:SetPoint("TOPLEFT", RAND, -424)
   self.knopf:SetScript("OnClick", function() O:Klick() end)
   self.meldung = S.absatz(c, INNEN, F.leise)
-  self.meldung:SetPoint("TOPLEFT", RAND, -434)
+  self.meldung:SetPoint("TOPLEFT", RAND, -460)
   self.meldung:SetJustifyH("CENTER")
   -- Beim Reiter "Inbox" statt des Hinweises: ein Klick führt zum Reiter "Send Mail"
   self.einzelKnopf = S.textKnopf(c, L.BTN_ADD_ITEMS, 130, function() O:ZumSendeReiter() end)
   self.einzelKnopf:SetHeight(20)
-  self.einzelKnopf:SetPoint("TOP", 0, -432)
+  self.einzelKnopf:SetPoint("TOP", 0, -458)
   S.tooltip(self.einzelKnopf, L.BTN_ADD_ITEMS, L.BTN_ADD_ITEMS_HELP)
 
   -- Eingeklappt: kleiner Knopf mit Icon am Postfenster
@@ -536,31 +606,6 @@ function O:ZumSendeReiter()
   if not sendeReiter() and MailFrameTab2 then MailFrameTab2:Click() end
 end
 
--- Gold an den gewählten Char (Patricks Wunsch, 13. Nov). Regel 1 bleibt: Pigeon Post setzt nie
--- Gold oder Nachnahme. Es schaltet nur auf "Send Mail", trägt den vollen Namen aus dem Register
--- ein, wählt "Send Money" statt Nachnahme und setzt den Cursor ins Goldfeld des Spiels. Den Betrag
--- tippt der Spieler, gesendet wird mit dem Knopf des Spiels, das Spiel fragt dabei selbst nach.
--- Der große Knopf von Pigeon Post sendet weiter nie einen Brief mit Gold (Versand:Pruefen).
-function O:GoldVorbereiten()
-  if beschaeftigt() then return end
-  local empf = self.empfaenger
-  local adresse = empf and ns.Register:IstEmpfaenger(empf.guid) and ns.Register:Adresse(empf)
-  if not adresse then return self:Status(L.ERR_RECIPIENT, "fehler") end
-  self:ZumSendeReiter()
-  if not sendeReiter() then return self:Status(L.ERR_SEND_TAB, "fehler") end
-  if SendMailSendMoneyButton and SendMailSendMoneyButton.GetChecked and not SendMailSendMoneyButton:GetChecked() then
-    SendMailSendMoneyButton:Click()
-  end
-  if SendMailNameEditBox then SendMailNameEditBox:SetText(adresse) end
-  if SendMailSubjectEditBox then
-    local betreff = SendMailSubjectEditBox:GetText()
-    if not betreff or betreff == "" then SendMailSubjectEditBox:SetText(L.SUBJECT_GOLD) end
-  end
-  local feld = SendMailMoneyGold or (SendMailMoney and SendMailMoney.gold)
-  if feld and feld.SetFocus then feld:SetFocus() end
-  self:Status(string.format(L.MSG_GOLD_READY, ns.vorname(ns.Register:Anzeigename(empf))), "hinweis")
-end
-
 -- Empfänger dieser Sitzung: zuerst die Wahl in dieser Sitzung, dann der Favorit,
 -- dann der zuletzt auf diesem Char gewählte, sonst der erste gültige
 function O:EmpfaengerGuid()
@@ -609,7 +654,6 @@ local function anzeigenEinzeln(self)
     h.menge:SetText(menge[h.schluessel] and tostring(menge[h.schluessel]) or "")
   end
   self.stapel:Setzen(not self.regel or self.regel.stapel ~= "alles")
-  if self.goldKnopf.Aktiv then self.goldKnopf:Aktiv(empf ~= nil and not beschaeftigt()) end
   local gesamt = #alle + #eigene
   return brief, gesamt, empf and 1 or 0, reste, math.ceil(gesamt / ns.Regeln.MaxAnhaenge())
 end
@@ -679,6 +723,8 @@ function O:Aktualisieren()
     self.vorschau = brief
   end
   local empf = self.empfaenger
+  local gold = (not split and self.goldFeld) and self.goldFeld:Kupfer() or 0
+  self.goldZeile:SetShown(not split)
 
   self.vorschauTitel:SetText(split and empf and string.format(L.NEXT_LETTER_TO, ns.Register:Anzeigename(empf)) or L.NEXT_LETTER)
 
@@ -705,6 +751,13 @@ function O:Aktualisieren()
       self.info:SetText(string.format(L.INFO_LINE, ns.anhaenge(alle), briefText, ns.geld(#brief * 30)))
     end
   end
+  if gold > 0 and empf then
+    if #brief == 0 then
+      self.info:SetText(string.format(L.INFO_GOLD_ONLY, ns.geld(30)))
+    else
+      self.info:SetText((self.info:GetText() or "") .. string.format(L.INFO_GOLD, ns.geld(gold)))
+    end
+  end
 
   local k = self.knopf
   local name = empf and ns.vorname(ns.Register:Anzeigename(empf)) or ""
@@ -712,6 +765,8 @@ function O:Aktualisieren()
     k:Aussehen(L.BTN_WAIT, F.akzent, false)
   elseif not empf and not split then
     k:Aussehen(L.BTN_NO_RECIPIENT, F.akzent, false)
+  elseif #brief == 0 and gold > 0 and not split then
+    k:Aussehen(string.format(L.BTN_SEND_GOLD, ns.geld(gold), name), F.akzent, true)
   elseif #brief == 0 then
     k:Aussehen(L.BTN_NOTHING, F.akzent, false)
   else
@@ -731,7 +786,23 @@ function O:Klick()
     return ns.Versand:Klick(empf, function() return ns.Verteilen.NaechsterBriefAn(empf.guid, ausgelassen) end,
       ausgelassen, self.vorschau)
   end
-  ns.Versand:Klick(self.empfaenger, self.regel, self.ausgelassen, self.vorschau)
+  -- Gold: erst die Rückfrage mit Betrag und Empfänger. Ändert sich der Betrag danach, fragt Pigeon
+  -- Post noch einmal.
+  local gold = self.goldFeld and self.goldFeld:Kupfer() or 0
+  local bestaetigt = self.goldBestaetigt
+  self.goldBestaetigt = nil
+  if gold > 0 and bestaetigt ~= gold then
+    local empf = self.empfaenger
+    if not empf then return end
+    return goldFragen(gold, ns.Register:Anzeigename(empf))
+  end
+  ns.Versand:Klick(self.empfaenger, self.regel, self.ausgelassen, self.vorschau, gold)
+end
+
+-- Der Brief mit Gold ist angekommen: das Feld leeren, damit nichts zweimal geht
+function O:GoldGesendet()
+  if self.goldFeld then self.goldFeld:Leeren() end
+  self:Aktualisieren()
 end
 
 function O:NieSenden(g)
