@@ -22,41 +22,27 @@ You farm herbs and ore on one character, but your alchemist, blacksmith or bank 
 - **Send gold to your alts**: type the amount into the Gold row. It goes with the next letter, for example with your materials and the deposit for the auction house, or on its own. Pigeon Post asks before it sends gold.
 - **What's new** window after updates, and square minimaps work.
 
-## New in 1.0
-
-- **Add single items**: on the Send Mail tab, right-click any item in your bags. It goes first in the next letter, and your ticked categories fill up the rest.
-- **Empty mailbox?** The Send Mail tab opens by itself, so a right-click works right away.
-- **Minimap button collectors** like MinimapButtonButton now pick up the Pigeon Post button.
-- **More materials**: more fish and gems are recognized, and all item lists were checked against the game data for WoW Forever.
-
-## New in 0.6
-
-- **Looks like part of the game**: the Pigeon Post window and the mailbox panel now use the game's own window frame with a portrait, red buttons, checkboxes and radio buttons. The window has its tabs along the bottom.
-- **Material icons** for every category, like copper ore for Mining or peacebloom for Herbs.
-
-![Looks like part of the game](images/pigeonpost-5-leiste.png)
-
-## New in 0.5
-
-- **Distribute between your crafters**: herbs to your alchemist, ore to your blacksmith, cloth to your tailor, everything else to your bank character. Pigeon Post plans all letters, you send them one click at a time.
-- **Item rules**: drag a single item onto the list and choose who gets it.
-- **Simpler panel**: no more modes. The panel shows the next letter, one click sends exactly that. Pigeon Post asks once before your very first letter.
-- **New category Cooking**: meat, fish, eggs and spices.
-
-![Distribute](images/pigeonpost-2-verteilen.png)
-![Profiles](images/pigeonpost-3-profil.png)
-
 ## Features
 
 - **Panel next to the mailbox**: choose a recipient, choose what to send, see the next letter before it goes out.
 - **Only your own characters**: Pigeon Post lists the characters you have logged in with. There is no text field for names.
 - **Favorite recipient**: mark your bank character with a star. It is preselected on every character.
 - **Categories**: Herbs, Mining, Cloth, Leather, Enchanting, Cooking and Green gear.
-- **Single items**: right-click anything that is not soulbound in your bags on the Send Mail tab to add it to the next letter.
+- **Single items**: right-click anything that is not soulbound in your bags on the Send Mail tab to add it to the next letter. With an empty mailbox the Send Mail tab opens by itself.
+- **Gold for your alts**: type an amount into the Gold row below the preview. It goes with the next letter after you confirm it, only to your own characters.
 - **Full stacks only** or **everything**, **Never send** list, **history**, **item check** and a **tooltip line** with the category.
 - **Works in every game language**: items are recognized by the game's own item data, never by names.
 
+![Looks like part of the game](images/pigeonpost-5-leiste.png)
+
 ![Your characters](images/pigeonpost-4-chars.png)
+
+## Split between your crafters
+
+Herbs to your alchemist, ore to your blacksmith, cloth to your tailor, everything else to your bank character. Open `/pigeon`, go to **Distribute** and choose where each category goes. Drag a single item onto the list for an item rule, for example potions for your main. At the mailbox, switch the panel from *One character* to *Distribute*: Pigeon Post plans all letters, and you send them one click at a time. Item rules come first, then the categories, then everything else. Items meant for the character you are playing stay in your bags.
+
+![Distribute](images/pigeonpost-2-verteilen.png)
+![Profiles](images/pigeonpost-3-profil.png)
 
 ## Install
 
