@@ -159,6 +159,11 @@ local function bauenEinzeln(p)
   O.einzeln = e
   e:SetAllPoints()
   S.ueberschrift(e, L.RECIPIENT):SetPoint("TOPLEFT", RAND, -80)
+  -- Gold an diesen Char: Pigeon Post trägt nur den Empfänger ein, Betrag und Senden im Spiel
+  O.goldKnopf = S.textKnopf(e, L.BTN_GOLD, 84, function() O:GoldVorbereiten() end)
+  O.goldKnopf:SetHeight(18)
+  O.goldKnopf:SetPoint("TOPRIGHT", -RAND, -76)
+  S.tooltip(O.goldKnopf, L.BTN_GOLD, L.BTN_GOLD_HELP)
   O.wahl = wahlFeld(e, -94, function()
     if #ns.Register:Empfaenger() == 0 then return ns.Fenster:Zeigen("chars") end
     if O.liste:IsShown() then O.liste:Hide() else O:ListeZeigen() end
@@ -531,6 +536,31 @@ function O:ZumSendeReiter()
   if not sendeReiter() and MailFrameTab2 then MailFrameTab2:Click() end
 end
 
+-- Gold an den gewählten Char (Patricks Wunsch, 13. Nov). Regel 1 bleibt: Pigeon Post setzt nie
+-- Gold oder Nachnahme. Es schaltet nur auf "Send Mail", trägt den vollen Namen aus dem Register
+-- ein, wählt "Send Money" statt Nachnahme und setzt den Cursor ins Goldfeld des Spiels. Den Betrag
+-- tippt der Spieler, gesendet wird mit dem Knopf des Spiels, das Spiel fragt dabei selbst nach.
+-- Der große Knopf von Pigeon Post sendet weiter nie einen Brief mit Gold (Versand:Pruefen).
+function O:GoldVorbereiten()
+  if beschaeftigt() then return end
+  local empf = self.empfaenger
+  local adresse = empf and ns.Register:IstEmpfaenger(empf.guid) and ns.Register:Adresse(empf)
+  if not adresse then return self:Status(L.ERR_RECIPIENT, "fehler") end
+  self:ZumSendeReiter()
+  if not sendeReiter() then return self:Status(L.ERR_SEND_TAB, "fehler") end
+  if SendMailSendMoneyButton and SendMailSendMoneyButton.GetChecked and not SendMailSendMoneyButton:GetChecked() then
+    SendMailSendMoneyButton:Click()
+  end
+  if SendMailNameEditBox then SendMailNameEditBox:SetText(adresse) end
+  if SendMailSubjectEditBox then
+    local betreff = SendMailSubjectEditBox:GetText()
+    if not betreff or betreff == "" then SendMailSubjectEditBox:SetText(L.SUBJECT_GOLD) end
+  end
+  local feld = SendMailMoneyGold or (SendMailMoney and SendMailMoney.gold)
+  if feld and feld.SetFocus then feld:SetFocus() end
+  self:Status(string.format(L.MSG_GOLD_READY, ns.vorname(ns.Register:Anzeigename(empf))), "hinweis")
+end
+
 -- Empfänger dieser Sitzung: zuerst die Wahl in dieser Sitzung, dann der Favorit,
 -- dann der zuletzt auf diesem Char gewählte, sonst der erste gültige
 function O:EmpfaengerGuid()
@@ -579,6 +609,7 @@ local function anzeigenEinzeln(self)
     h.menge:SetText(menge[h.schluessel] and tostring(menge[h.schluessel]) or "")
   end
   self.stapel:Setzen(not self.regel or self.regel.stapel ~= "alles")
+  if self.goldKnopf.Aktiv then self.goldKnopf:Aktiv(empf ~= nil and not beschaeftigt()) end
   local gesamt = #alle + #eigene
   return brief, gesamt, empf and 1 or 0, reste, math.ceil(gesamt / ns.Regeln.MaxAnhaenge())
 end

@@ -68,6 +68,7 @@ local STANDARD = {
   eingeklappt = false,
   autoOeffnen = true,  -- Leiste beim Öffnen des Briefkastens zeigen
   minimapZeigen = true,
+  neuigkeitenZeigen = true, -- nach einem Update einmal zeigen, was neu ist (Neuigkeiten.lua)
   minimapWinkel = 210,
   tooltip = true,      -- Kategorie im Gegenstands-Tooltip
   -- Verteilen: Profile mit Zielen je Kategorie und je Gegenstand, siehe Verteilen.lua
@@ -112,8 +113,21 @@ end)
 
 ns.Ereignis("ADDON_LOADED", function(name)
   if name ~= ADDON then return end
+  -- Gab es die Einstellungen schon? Sonst ist Pigeon Post frisch installiert (Neuigkeiten.lua)
+  ns.bestehend = PigeonPostDB ~= nil
   PigeonPostDB = PigeonPostDB or {}
   ergaenzen(PigeonPostDB, STANDARD)
   PigeonPostDB.modus = nil   -- bis 0.5.0: Test, Attach, Send. Jetzt sendet jeder Klick einen Brief.
   ns.db = PigeonPostDB
+end)
+
+-- Nach dem Einloggen, wenn die gespeicherten Einstellungen da sind
+local start = {}
+function ns.beimStart(f) table.insert(start, f) end
+ns.Ereignis("PLAYER_LOGIN", function()
+  if not ns.db then return end
+  for _, f in ipairs(start) do
+    local ok, fehler = pcall(f)
+    if not ok then ns.melde(string.format(L.ERR_EVENT, "PLAYER_LOGIN", tostring(fehler))) end
+  end
 end)

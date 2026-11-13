@@ -1,5 +1,11 @@
 # Pigeon Post changelog
 
+## 1.1.0 (2026-11-13)
+
+- **Send gold to your alts**: the Send gold button next to the recipient opens the Send Mail tab for that character, with the full name filled in and Send Money picked. Type the amount into the game's gold field and send it with the game's Send button, the game asks you to confirm. Pigeon Post itself still never sends gold.
+- **What's new** window once after each update. `/pigeon news` shows it again.
+- Square minimaps: the minimap button follows the square edge.
+
 ## 1.0.0 (2026-11-06)
 
 - **Add single items**: on the Send Mail tab, right-click any item in your bags. It goes first in the next letter, with a colored border in the preview, and your ticked categories fill up the rest. Great for that one potion or piece of gear for your alt. Right-click it in the preview to put it back.

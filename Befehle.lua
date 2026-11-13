@@ -11,6 +11,7 @@ local BEFEHLE = {
   { "remove <name>", L.CMD_REMOVE },
   { "log", L.CMD_LOG },
   { "check", L.CMD_CHECK },
+  { "news", L.CMD_NEWS },
   { "help", L.CMD_HELP },
 }
 ns.BEFEHLE = BEFEHLE
@@ -53,6 +54,8 @@ SlashCmdList.PIGEONPOST = function(eingabe)
     ns.Fenster:Umschalten()
   elseif wort == "help" then
     hilfe()
+  elseif wort == "news" then
+    ns.Neuigkeiten:Umschalten()
   elseif wort == "panel" then
     if MailFrame and MailFrame:IsShown() and ns.Oberflaeche.panel then
       ns.db.eingeklappt = not ns.db.eingeklappt

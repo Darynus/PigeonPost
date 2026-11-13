@@ -34,6 +34,7 @@ L.ONE_CHARACTER = "1 character"
 L.N_CHARACTERS = "%d characters"
 L.SUBJECT_PREFIX = "Pigeon Post: "
 L.SUBJECT_ITEMS = "Items"
+L.SUBJECT_GOLD = "Pigeon Post: Gold"
 L.TOOLTIP_PREFIX = "Pigeon Post: "
 L.ERR_EVENT = "Error in %s: %s"
 
@@ -75,6 +76,9 @@ L.MISSING_CHAR = "Missing a character? Log in with it once."
 L.FAVORITE = "Favorite"
 L.FAVORITE_HELP = "Your favorite is preselected on every character, for example your bank character."
 L.RIGHTCLICK_REMOVE = "Right-click: take out of this letter"
+L.BTN_GOLD = "Send gold"
+L.BTN_GOLD_HELP = "Opens the Send Mail tab with this character as the recipient. Type the amount into the game's gold field and send it with the game's Send button. The game asks you to confirm. Pigeon Post itself never sends gold."
+L.MSG_GOLD_READY = "Type the gold for %s into the game's gold field, then click the game's Send button."
 L.ADDED_BY_YOU = "Added by you"
 L.BTN_ADD_ITEMS = "Add single items"
 L.BTN_ADD_ITEMS_HELP = "Opens the Send Mail tab. There, a right-click on an item in your bags puts it into the next letter. On the Inbox tab a right-click uses the item, that is how the game works."
@@ -132,7 +136,7 @@ L.MSG_FAVORITE_OFF = "%s is no longer your favorite."
 L.ERR_COMBAT = "You can't send mail in combat."
 L.ERR_MAILBOX_CLOSED = "The mailbox is not open."
 L.ERR_RECIPIENT = "Please choose one of your own characters."
-L.ERR_GOLD = "There is gold or COD in the mail window. Please set it to 0."
+L.ERR_GOLD = "There is gold or COD in the mail window. Send gold with the game's Send button, or set it to 0. Pigeon Post never sends gold."
 L.ERR_NOTHING = "Nothing to send. Check your selection."
 L.ERR_PREVIEW_CHANGED = "Your bags changed. The preview is up to date now, please check it and click again."
 L.ERR_ALREADY_ATTACHED = "You added items yourself. Switch to One character or take them out first."
@@ -242,7 +246,7 @@ L.CATALOG_RUNNING = "The check is already running."
 L.CATALOG_MISSING_API = "This game client is missing GetItemInfoInstant or C_Timer."
 
 L.HELP_START_TITLE = "Getting Started"
-L.HELP_START = "1. Log in once with every character that should receive mail.\n2. Open a mailbox. The Pigeon Post panel appears next to it.\n3. Pick a recipient and what to send. Tip: mark your bank character as favorite.\n4. Right-click an item in the preview to take it out of this letter. Shift + right-click to never send it.\n5. To add a single item, open the Send Mail tab and right-click it in your bags. Your own items go first in the next letter.\n6. Check the preview, then click the big button. Each click sends exactly one letter."
+L.HELP_START = "1. Log in once with every character that should receive mail.\n2. Open a mailbox. The Pigeon Post panel appears next to it.\n3. Pick a recipient and what to send. Tip: mark your bank character as favorite.\n4. Right-click an item in the preview to take it out of this letter. Shift + right-click to never send it.\n5. To add a single item, open the Send Mail tab and right-click it in your bags. Your own items go first in the next letter.\n6. Check the preview, then click the big button. Each click sends exactly one letter.\n7. Gold for an alt: click Send gold next to the recipient, type the amount into the game's gold field and send it with the game's Send button."
 L.HELP_SPLIT_TITLE = "Distribute"
 L.HELP_SPLIT = "Under Distribute you set up profiles: where herbs, mining, cloth and the rest go, plus item rules for single items. At the mailbox, switch the panel to Distribute and pick a profile. Pigeon Post plans all letters and sends the next one with each click."
 L.HELP_SENDING_TITLE = "Sending"
@@ -265,9 +269,29 @@ L.CMD_FAVORITE = "mark or unmark a favorite recipient"
 L.CMD_REMOVE = "remove a character from the list"
 L.CMD_LOG = "show the last 10 letters in chat"
 L.CMD_CHECK = "open the item check"
+L.CMD_NEWS = "show what is new in this version"
 L.CMD_HELP = "show this list"
 
 -- Minikarte und Optionen
 L.MINIMAP_TOOLTIP = "Left-click: open window\nRight-click: settings\nDrag: move button"
 L.OPTIONS_PAGE_TEXT = "Send herbs, ore, cloth and other materials to your own characters with one click per letter. All settings are in the Pigeon Post window."
 L.OPEN_WINDOW = "Open Pigeon Post"
+
+-- Neuigkeiten nach einem Update (Neuigkeiten.lua), neueste Version zuerst
+L.NEWS_TITLE = "What's new in %s"
+L.NEWS_VERSION = "Version %s"
+L.NEWS_AGAIN = "Show this after updates"
+L.NEWS_AGAIN_HELP = "A short window once after Pigeon Post was updated. /pigeon news shows it again."
+L.NEWS_OK = "Got it"
+L.NEWS = {
+  { version = "1.1.0", zeilen = {
+    "Send gold to your alts: click Send gold next to the recipient. Pigeon Post fills in the name, you type the amount into the game's gold field and send it with the game's Send button. Pigeon Post itself still never sends gold.",
+    "This window: after an update, Pigeon Post tells you once what is new. /pigeon news shows it again.",
+    "Works with square minimaps.",
+  } },
+  { version = "1.0.0", zeilen = {
+    "Add single items: on the Send Mail tab, right-click any item in your bags. It goes first in the next letter.",
+    "With an empty mailbox the Send Mail tab opens by itself.",
+    "Minimap button collectors like MinimapButtonButton pick up the Pigeon Post button.",
+  } },
+}
