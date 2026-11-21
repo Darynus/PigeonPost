@@ -1,5 +1,12 @@
 # Pigeon Post changelog
 
+## 1.1.1 (2026-11-20)
+
+- **With One character the Send Mail tab opens right away**: when you open a mailbox, even with mail in your Inbox, when you pick One character and when you expand the panel. A right-click in your bags now puts the item into the letter instead of using it.
+- Letters waiting in your Inbox are shown below the big button, so you don't miss them. Click the Inbox tab to read them, Pigeon Post won't switch back by itself.
+- Distribute and a collapsed panel work as before: with Distribute the Send Mail tab only opens by itself when the mailbox is empty, a collapsed panel leaves the mail window alone.
+- Fixed: `/pigeon panel` needed two tries when the panel was not opened automatically.
+
 ## 1.1.0 (2026-11-13)
 
 - **Send gold to your alts**: type the amount into the new Gold row below the preview. It goes with the next letter, for example with your materials and the deposit for the auction house, or on its own. Pigeon Post asks before it sends, with the amount and the name, and only to your own characters. Never COD.

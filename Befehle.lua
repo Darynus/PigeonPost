@@ -57,10 +57,17 @@ SlashCmdList.PIGEONPOST = function(eingabe)
   elseif wort == "news" then
     ns.Neuigkeiten:Umschalten()
   elseif wort == "panel" then
-    if MailFrame and MailFrame:IsShown() and ns.Oberflaeche.panel then
-      ns.db.eingeklappt = not ns.db.eingeklappt
-      ns.Oberflaeche.sitzungZu = false
-      ns.Oberflaeche:Sichtbarkeit()
+    local O = ns.Oberflaeche
+    if MailFrame and MailFrame:IsShown() and O.panel then
+      -- Umschalten nach dem, was zu sehen ist. Bis 1.1.0 zählte nur der gespeicherte Zustand: War die
+      -- Leiste nur für diesen Besuch zu (Leiste nicht automatisch zeigen), ging sie erst beim zweiten
+      -- Befehl auf. Aufklappen wie mit der Lasche, im Einzelbrief also gleich zum Reiter "Send Mail".
+      if O.panel:IsShown() then
+        ns.db.eingeklappt = true
+        O:Sichtbarkeit()
+      else
+        O:Aufklappen()
+      end
     else
       ns.melde(L.ERR_MAILBOX_CLOSED)
     end

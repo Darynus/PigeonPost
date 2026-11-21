@@ -26,6 +26,12 @@ local function verteilen() return ns.Verteilen.An() end
 -- Reiter "Send Mail" offen? Nur dann legt ein Rechtsklick in der Tasche den Gegenstand in den Brief.
 -- Beim Reiter "Inbox" benutzt das Spiel ihn. Das lässt sich von einem Add-on aus nicht abfangen.
 local function sendeReiter() return SendMailFrame ~= nil and SendMailFrame:IsShown() end
+-- Briefe im Posteingang. Der zweite Wert zählt auch die, die bei mehr als 50 noch auf dem Server liegen.
+local function postImEingang()
+  if not GetInboxNumItems then return 0 end
+  local anzahl, gesamt = GetInboxNumItems()
+  return math.max(tonumber(anzahl) or 0, tonumber(gesamt) or 0)
+end
 
 -- Gold für den nächsten Brief (Patrick, 13. Nov: „bei seinen eigenen Twinks sollte das möglich
 -- sein“, zum Beispiel Material und etwas Gold fürs Auktionshaus). Mit den Münzfeldern des Spiels
@@ -107,7 +113,8 @@ local function ersterBrief()
   return false
 end
 
--- Einzelbrief oder Verteilen umschalten
+-- Einzelbrief oder Verteilen umschalten. "One character" führt gleich zum Reiter "Send Mail"
+-- (Patrick, 20. Nov), siehe O:EinzelbriefReiter.
 function ns.ArtWaehlen(wert)
   if beschaeftigt() then return O:Aktualisieren() end
   ns.db.verteilung.an = wert == "verteilen"
@@ -116,6 +123,7 @@ function ns.ArtWaehlen(wert)
   O:Status("", "hinweis")
   O:Aktualisieren()
   if ns.Fenster then ns.Fenster:Aktualisieren() end
+  if wert == "einzeln" then O:EinzelbriefReiter() end
 end
 
 -- Ein Feld der Vorschau, wie ein Anhang im Postfenster
@@ -453,9 +461,7 @@ function O:Bauen()
   lasche:HookScript("OnLeave", function(self) S.randFarbe(self, F.rand) end)
   lasche:SetScript("OnClick", function()
     S.klick()
-    ns.db.eingeklappt = false
-    O.sitzungZu = false
-    O:Sichtbarkeit()
+    O:Aufklappen()
   end)
   S.tooltip(lasche, L.ADDON_NAME, function() return O.laschenHilfe or L.EXPAND_HELP end)
 
@@ -579,16 +585,22 @@ end
 
 -- Zeile unter dem großen Knopf: eine Meldung, sonst der Hinweis, wie einzelne Gegenstände in den
 -- Brief kommen. Beim Reiter "Inbox" steht dort ein Knopf, der zum Reiter "Send Mail" führt.
+-- Beim Reiter "Send Mail" ist der Posteingang verdeckt: Liegen dort Briefe, nennt die Zeile ihre Zahl
+-- statt des Hinweises (Patrick, 20. Nov), damit sie nicht übersehen werden. Meldungen und der Hinweis
+-- auf eigene Anhänge beim Verteilen gehen vor.
 function O:Zeile()
   if not self.meldung then return end
   local text, art, knopf = self.statusText, self.statusArt, false
   if not text or text == "" then
     art = "leise"
+    local post = sendeReiter() and postImEingang() or 0
     if beschaeftigt() then
       text = ""
-    elseif verteilen() then
-      text = #ns.Versand:EigeneAnhaenge() > 0 and L.HINT_SPLIT_ATTACHED or ""
-    elseif not self.empfaenger then
+    elseif verteilen() and #ns.Versand:EigeneAnhaenge() > 0 then
+      text = L.HINT_SPLIT_ATTACHED
+    elseif post > 0 then
+      text, art = string.format(L.INBOX_WAITING, post == 1 and L.ONE_LETTER or string.format(L.N_LETTERS, post)), "hinweis"
+    elseif verteilen() or not self.empfaenger then
       text = ""
     elseif sendeReiter() then
       text = L.HINT_RIGHTCLICK
@@ -604,6 +616,25 @@ end
 -- Zum Reiter "Send Mail". Dort legt ein Rechtsklick in der Tasche den Gegenstand in den Brief.
 function O:ZumSendeReiter()
   if not sendeReiter() and MailFrameTab2 then MailFrameTab2:Click() end
+end
+
+-- Einzelbrief: gleich zum Reiter "Send Mail", damit ein Rechtsklick in der Tasche den Gegenstand in
+-- den Brief legt und ihn nicht benutzt (Patrick, 20. Nov: „aus Versehen etwas konsumiert“). Für die
+-- Wahl von "One character" in der Leiste und für das Aufklappen. Nie beim Verteilen, und nur mit
+-- sichtbarer Leiste: Sie hängt am Postfenster, sichtbar heißt also auch Briefkasten offen. Danach
+-- wechselt Pigeon Post in diesem Besuch nicht mehr von selbst: Wer auf "Inbox" klickt, bleibt dort.
+function O:EinzelbriefReiter()
+  if verteilen() or not (self.panel and self.panel:IsVisible()) then return end
+  self.postfachGeprueft = true
+  self:ZumSendeReiter()
+end
+
+-- Leiste aufklappen (Lasche, /pigeon panel). Im Einzelbrief gleich zum Reiter "Send Mail".
+function O:Aufklappen()
+  ns.db.eingeklappt = false
+  self.sitzungZu = false
+  self:Sichtbarkeit()
+  self:EinzelbriefReiter()
 end
 
 -- Empfänger dieser Sitzung: zuerst die Wahl in dieser Sitzung, dann der Favorit,
@@ -861,17 +892,30 @@ function O:Bald()
   end)
 end
 
--- Leeres Postfach: gleich zum Reiter "Send Mail", einmal je Besuch. Dann geht der Rechtsklick in
--- der Tasche sofort. Kurz warten, denn die erste Meldung kann kommen, bevor die Post geladen ist.
+-- Postfach sicher leer? Nicht, solange das Spiel es noch lädt oder ungelesene Post unterwegs ist.
+local function postfachLeer()
+  if not GetInboxNumItems or MailFrame.inboxBeingChecked then return false end
+  return postImEingang() == 0 and not (HasNewMail and HasNewMail())
+end
+
+-- Beim Öffnen des Briefkastens einmal je Besuch von selbst zum Reiter "Send Mail". Dann geht der
+-- Rechtsklick in der Tasche sofort.
+--   Einzelbrief: immer, auch wenn Post im Posteingang liegt (Patrick, 20. Nov: „aus Versehen etwas
+--   konsumiert“). Die Zeile unter dem Knopf nennt dann die Briefe (O:Zeile).
+--   Verteilen: nur bei leerem Postfach, wie bisher.
 -- Nur wenn die Leiste offen ist: Wer sie eingeklappt hat, bekommt das Postfenster wie immer.
+-- Kurz warten: Forever meldet MAIL_SHOW mehrmals und springt dabei selbst auf den Reiter "Inbox",
+-- und die erste Meldung kann kommen, bevor die Post geladen ist. Danach wechselt Pigeon Post in
+-- diesem Besuch nicht mehr von selbst, wer auf "Inbox" klickt, bleibt dort. Jede weitere Meldung
+-- hält nur die Zahl der Briefe in der Zeile aktuell.
 function O:PostfachPruefen()
-  if self.postfachGeprueft or not (self.panel and self.panel:IsVisible()) then return end
-  if not (GetInboxNumItems and C_Timer and C_Timer.After) then return end
+  if not (self.panel and self.panel:IsVisible()) then return end
+  self:Zeile()
+  if self.postfachGeprueft or not (C_Timer and C_Timer.After) then return end
   self.postfachGeprueft = true
   C_Timer.After(0.3, function()
-    if not (O.panel and O.panel:IsVisible()) or MailFrame.inboxBeingChecked then return end
-    local anzahl, gesamt = GetInboxNumItems()
-    if (anzahl or 0) > 0 or (gesamt or 0) > 0 or (HasNewMail and HasNewMail()) then return end
+    if not (O.panel and O.panel:IsVisible()) then return end
+    if verteilen() and not postfachLeer() then return end
     O:ZumSendeReiter()
   end)
 end

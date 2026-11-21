@@ -91,6 +91,7 @@ L.ADDED_BY_YOU = "Added by you"
 L.BTN_ADD_ITEMS = "Add single items"
 L.BTN_ADD_ITEMS_HELP = "Opens the Send Mail tab. There, a right-click on an item in your bags puts it into the next letter. On the Inbox tab a right-click uses the item, that is how the game works."
 L.HINT_RIGHTCLICK = "Right-click items in your bags to add them."
+L.INBOX_WAITING = "%s waiting in your Inbox."
 L.HINT_SPLIT_ATTACHED = "Items you added yourself only go out with One character."
 L.EMPTY_SLOT_SEND = "Right-click an item in your bags to add it to this letter."
 L.EMPTY_SLOT_INBOX = "Click to open the Send Mail tab, then right-click an item in your bags."
@@ -254,7 +255,7 @@ L.CATALOG_RUNNING = "The check is already running."
 L.CATALOG_MISSING_API = "This game client is missing GetItemInfoInstant or C_Timer."
 
 L.HELP_START_TITLE = "Getting Started"
-L.HELP_START = "1. Log in once with every character that should receive mail.\n2. Open a mailbox. The Pigeon Post panel appears next to it.\n3. Pick a recipient and what to send. Tip: mark your bank character as favorite.\n4. Right-click an item in the preview to take it out of this letter. Shift + right-click to never send it.\n5. To add a single item, open the Send Mail tab and right-click it in your bags. Your own items go first in the next letter.\n6. Check the preview, then click the big button. Each click sends exactly one letter.\n7. Gold for an alt: type the amount into the Gold row and click the big button. Pigeon Post asks before it sends gold."
+L.HELP_START = "1. Log in once with every character that should receive mail.\n2. Open a mailbox. The Pigeon Post panel appears next to it.\n3. Pick a recipient and what to send. Tip: mark your bank character as favorite.\n4. Right-click an item in the preview to take it out of this letter. Shift + right-click to never send it.\n5. To add a single item, right-click it in your bags while the Send Mail tab is open. With One character Pigeon Post opens that tab for you. Your own items go first in the next letter.\n6. Check the preview, then click the big button. Each click sends exactly one letter.\n7. Gold for an alt: type the amount into the Gold row and click the big button. Pigeon Post asks before it sends gold."
 L.HELP_SPLIT_TITLE = "Distribute"
 L.HELP_SPLIT = "Under Distribute you set up profiles: where herbs, mining, cloth and the rest go, plus item rules for single items. At the mailbox, switch the panel to Distribute and pick a profile. Pigeon Post plans all letters and sends the next one with each click."
 L.HELP_SENDING_TITLE = "Sending"
@@ -292,6 +293,11 @@ L.NEWS_AGAIN = "Show this after updates"
 L.NEWS_AGAIN_HELP = "A short window once after Pigeon Post was updated. /pigeon news shows it again."
 L.NEWS_OK = "Got it"
 L.NEWS = {
+  { version = "1.1.1", zeilen = {
+    "With One character the Send Mail tab opens right away: when you open a mailbox, even with mail in your Inbox, when you pick One character and when you expand the panel. A right-click in your bags puts the item into the letter instead of using it.",
+    "Letters waiting in your Inbox are shown below the big button. Click the Inbox tab to read them, Pigeon Post won't switch back by itself.",
+    "Distribute and a collapsed panel work as before.",
+  } },
   { version = "1.1.0", zeilen = {
     "Send gold to your alts: type the amount into the new Gold row. It goes with the next letter, for example with your materials and the deposit for the auction house, or on its own. Pigeon Post asks before it sends, and only to your own characters.",
     "This window: after an update, Pigeon Post tells you once what is new. /pigeon news shows it again.",
