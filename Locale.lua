@@ -255,7 +255,7 @@ L.CATALOG_RUNNING = "The check is already running."
 L.CATALOG_MISSING_API = "This game client is missing GetItemInfoInstant or C_Timer."
 
 L.HELP_START_TITLE = "Getting Started"
-L.HELP_START = "1. Log in once with every character that should receive mail.\n2. Open a mailbox. The Pigeon Post panel appears next to it.\n3. Pick a recipient and what to send. Tip: mark your bank character as favorite.\n4. Right-click an item in the preview to take it out of this letter. Shift + right-click to never send it.\n5. To add a single item, right-click it in your bags while the Send Mail tab is open. With One character Pigeon Post opens that tab for you. Your own items go first in the next letter.\n6. Check the preview, then click the big button. Each click sends exactly one letter.\n7. Gold for an alt: type the amount into the Gold row and click the big button. Pigeon Post asks before it sends gold."
+L.HELP_START = "1. Log in once with every character that should receive mail.\n2. Open a mailbox. The Pigeon Post panel appears next to it.\n3. Pick a recipient and what to send. Tip: mark your bank character as favorite.\n4. Right-click an item in the preview to take it out of this letter. Shift + right-click to never send it.\n5. To add a single item, right-click it in your bags. With One character and the panel open this works on the Inbox tab too, so you can read your mail and fill the letter at the same time. Your own items go first in the next letter. To use or equip an item at the mailbox, collapse the panel.\n6. Check the preview, then click the big button. Each click sends exactly one letter.\n7. Gold for an alt: type the amount into the Gold row and click the big button. Pigeon Post asks before it sends gold."
 L.HELP_SPLIT_TITLE = "Distribute"
 L.HELP_SPLIT = "Under Distribute you set up profiles: where herbs, mining, cloth and the rest go, plus item rules for single items. At the mailbox, switch the panel to Distribute and pick a profile. Pigeon Post plans all letters and sends the next one with each click."
 L.HELP_SENDING_TITLE = "Sending"
@@ -293,10 +293,15 @@ L.NEWS_AGAIN = "Show this after updates"
 L.NEWS_AGAIN_HELP = "A short window once after Pigeon Post was updated. /pigeon news shows it again."
 L.NEWS_OK = "Got it"
 L.NEWS = {
+  { version = "1.1.2", zeilen = {
+    "The mailbox opens on your Inbox again when mail is waiting, so you can just read your mail.",
+    "With One character and the panel open, a right-click in your bags puts the item into the letter on the Inbox tab too. It shows up in the preview right away, and nothing gets used by mistake.",
+    "Collapse the panel or pick Distribute, and a right-click works as the game does it.",
+  } },
+  -- 1.1.1 sprang im Einzelbrief gleich zum Reiter "Send Mail"; 1.1.2 nimmt das zurück, hier steht nur,
+  -- was davon bleibt (sonst widersprächen sich beim Update von 1.1.0 die beiden Einträge)
   { version = "1.1.1", zeilen = {
-    "With One character the Send Mail tab opens right away: when you open a mailbox, even with mail in your Inbox, when you pick One character and when you expand the panel. A right-click in your bags puts the item into the letter instead of using it.",
-    "Letters waiting in your Inbox are shown below the big button. Click the Inbox tab to read them, Pigeon Post won't switch back by itself.",
-    "Distribute and a collapsed panel work as before.",
+    "On the Send Mail tab, letters waiting in your Inbox are shown below the big button, so you don't miss them.",
   } },
   { version = "1.1.0", zeilen = {
     "Send gold to your alts: type the amount into the new Gold row. It goes with the next letter, for example with your materials and the deposit for the auction house, or on its own. Pigeon Post asks before it sends, and only to your own characters.",

@@ -23,9 +23,12 @@ local ARTEN = {
 local function ich() return UnitGUID("player") end
 local function beschaeftigt() return ns.Versand:Beschaeftigt() end
 local function verteilen() return ns.Verteilen.An() end
--- Reiter "Send Mail" offen? Nur dann legt ein Rechtsklick in der Tasche den Gegenstand in den Brief.
--- Beim Reiter "Inbox" benutzt das Spiel ihn. Das lässt sich von einem Add-on aus nicht abfangen.
+-- Reiter "Send Mail" offen? Dort legt ein Rechtsklick in der Tasche den Gegenstand in den Brief.
+-- Beim Reiter "Inbox" benutzt das Spiel ihn, außer Pigeon Post schaltet den Rechtsklick dort um
+-- (O:Rechtsklick).
 local function sendeReiter() return SendMailFrame ~= nil and SendMailFrame:IsShown() end
+-- Legt ein Rechtsklick in der Tasche gerade den Gegenstand in den Brief?
+local function rechtsklickInDenBrief() return sendeReiter() or O.rechtsklickAn == true end
 -- Briefe im Posteingang. Der zweite Wert zählt auch die, die bei mehr als 50 noch auf dem Server liegen.
 local function postImEingang()
   if not GetInboxNumItems then return 0 end
@@ -113,17 +116,17 @@ local function ersterBrief()
   return false
 end
 
--- Einzelbrief oder Verteilen umschalten. "One character" führt gleich zum Reiter "Send Mail"
--- (Patrick, 20. Nov), siehe O:EinzelbriefReiter.
+-- Einzelbrief oder Verteilen umschalten. Der Rechtsklick in der Tasche gilt nur im Einzelbrief für
+-- den Brief (O:Rechtsklick).
 function ns.ArtWaehlen(wert)
   if beschaeftigt() then return O:Aktualisieren() end
   ns.db.verteilung.an = wert == "verteilen"
   if O.liste then O.liste:Hide() end
   O.ausgelassen = {}
+  O:Rechtsklick()
   O:Status("", "hinweis")
   O:Aktualisieren()
   if ns.Fenster then ns.Fenster:Aktualisieren() end
-  if wert == "einzeln" then O:EinzelbriefReiter() end
 end
 
 -- Ein Feld der Vorschau, wie ein Anhang im Postfenster
@@ -152,7 +155,7 @@ local function slot(parent, i)
       -- Leeres Feld: sagt, wie ein einzelner Gegenstand in den Brief kommt
       if verteilen() or beschaeftigt() then return GameTooltip:Hide() end
       GameTooltip:SetText(L.BTN_ADD_ITEMS, 1, 1, 1)
-      GameTooltip:AddLine(sendeReiter() and L.EMPTY_SLOT_SEND or L.EMPTY_SLOT_INBOX, F.leise[1], F.leise[2], F.leise[3], true)
+      GameTooltip:AddLine(rechtsklickInDenBrief() and L.EMPTY_SLOT_SEND or L.EMPTY_SLOT_INBOX, F.leise[1], F.leise[2], F.leise[3], true)
       return GameTooltip:Show()
     end
     if g.eigen then
@@ -169,10 +172,11 @@ local function slot(parent, i)
   end)
   s:HookScript("OnLeave", function() GameTooltip:Hide() end)
   -- Rechtsklick: nur aus diesem Brief nehmen. Umschalt+Rechtsklick: nie wieder senden.
-  -- Linksklick auf ein leeres Feld: zum Reiter "Send Mail", um Gegenstände hinzuzufügen.
+  -- Linksklick auf ein leeres Feld: zum Reiter "Send Mail", wenn der Rechtsklick in der Tasche hier
+  -- nicht ohnehin in den Brief geht.
   s:SetScript("OnClick", function(self, taste)
     if not self.gegenstand then
-      if taste == "LeftButton" then O:ZumSendeReiter() end
+      if taste == "LeftButton" and not rechtsklickInDenBrief() then O:ZumSendeReiter() end
       return
     end
     if taste ~= "RightButton" then return end
@@ -474,7 +478,7 @@ function O:Bauen()
     O.liste:Hide()
     if not (MailFrame and MailFrame:IsShown()) then ns.Versand:BriefkastenZu() end
   end)
-  MailFrame:HookScript("OnHide", function() O.sitzung = false end)
+  MailFrame:HookScript("OnHide", function() O.sitzung, O.rechtsklickAn = false, false end)
   -- Reiter gewechselt: der Hinweis unter dem Knopf hängt daran
   if SendMailFrame and SendMailFrame.HookScript then
     SendMailFrame:HookScript("OnShow", function() O:Zeile() end)
@@ -575,6 +579,7 @@ function O:Sichtbarkeit()
   local zu = ns.db.eingeklappt or self.sitzungZu
   self.panel:SetShown(not zu)
   self.lasche:SetShown(zu and true or false)
+  self:Rechtsklick()
   self:Aktualisieren()
 end
 
@@ -584,7 +589,8 @@ function O:Status(text, art)
 end
 
 -- Zeile unter dem großen Knopf: eine Meldung, sonst der Hinweis, wie einzelne Gegenstände in den
--- Brief kommen. Beim Reiter "Inbox" steht dort ein Knopf, der zum Reiter "Send Mail" führt.
+-- Brief kommen (Rechtsklick, beim Reiter "Inbox" auch, solange O:Rechtsklick ihn umgeschaltet hat).
+-- Geht das nicht, steht dort ein Knopf, der zum Reiter "Send Mail" führt.
 -- Beim Reiter "Send Mail" ist der Posteingang verdeckt: Liegen dort Briefe, nennt die Zeile ihre Zahl
 -- statt des Hinweises (Patrick, 20. Nov), damit sie nicht übersehen werden. Meldungen und der Hinweis
 -- auf eigene Anhänge beim Verteilen gehen vor.
@@ -602,7 +608,7 @@ function O:Zeile()
       text, art = string.format(L.INBOX_WAITING, post == 1 and L.ONE_LETTER or string.format(L.N_LETTERS, post)), "hinweis"
     elseif verteilen() or not self.empfaenger then
       text = ""
-    elseif sendeReiter() then
+    elseif rechtsklickInDenBrief() then
       text = L.HINT_RIGHTCLICK
     else
       text, knopf = "", true
@@ -618,23 +624,28 @@ function O:ZumSendeReiter()
   if not sendeReiter() and MailFrameTab2 then MailFrameTab2:Click() end
 end
 
--- Einzelbrief: gleich zum Reiter "Send Mail", damit ein Rechtsklick in der Tasche den Gegenstand in
--- den Brief legt und ihn nicht benutzt (Patrick, 20. Nov: „aus Versehen etwas konsumiert“). Für die
--- Wahl von "One character" in der Leiste und für das Aufklappen. Nie beim Verteilen, und nur mit
--- sichtbarer Leiste: Sie hängt am Postfenster, sichtbar heißt also auch Briefkasten offen. Danach
--- wechselt Pigeon Post in diesem Besuch nicht mehr von selbst: Wer auf "Inbox" klickt, bleibt dort.
-function O:EinzelbriefReiter()
-  if verteilen() or not (self.panel and self.panel:IsVisible()) then return end
-  self.postfachGeprueft = true
-  self:ZumSendeReiter()
+-- Rechtsklick in der Tasche legt den Gegenstand in den Brief, auch beim Reiter "Inbox" (Patrick,
+-- 24. Nov: „ich habe aber auch manchmal nur Post im Briefkasten, die ich öffnen will, und nichts
+-- verschicken möchte“; davor, 20. Nov: „aus Versehen etwas konsumiert, statt das in den Briefkasten
+-- reinzustecken“). Was ein Rechtsklick in der Tasche tut, entscheidet das Spiel über
+-- SetSendMailShowing: Der Reiter "Send Mail" stellt es an, der Reiter "Inbox" aus (MailFrame.lua,
+-- MailFrameTab_OnClick). Solange die Leiste offen ist und "One character" gilt, stellt Pigeon Post
+-- es beim Reiter "Inbox" wieder an. Dann bleibt der Posteingang offen, und ein Rechtsklick legt den
+-- Gegenstand in den Brief, statt ihn zu benutzen. Er steht sofort in der Vorschau, ein Rechtsklick
+-- dort legt ihn zurück. Eingeklappt und beim Verteilen (dort gehen eigene Anhänge nicht mit) gilt,
+-- was das Spiel will. Seit 1.1.2; 1.1.1 hat dafür gleich den Reiter "Send Mail" geöffnet.
+function O:Rechtsklick()
+  self.rechtsklickAn = false
+  if not (SetSendMailShowing and MailFrame and MailFrame:IsShown()) or sendeReiter() then return end
+  local an = (self.panel and self.panel:IsVisible() and not verteilen()) and true or false
+  if pcall(SetSendMailShowing, an) then self.rechtsklickAn = an end
 end
 
--- Leiste aufklappen (Lasche, /pigeon panel). Im Einzelbrief gleich zum Reiter "Send Mail".
+-- Leiste aufklappen (Lasche, /pigeon panel)
 function O:Aufklappen()
   ns.db.eingeklappt = false
   self.sitzungZu = false
   self:Sichtbarkeit()
-  self:EinzelbriefReiter()
 end
 
 -- Empfänger dieser Sitzung: zuerst die Wahl in dieser Sitzung, dann der Favorit,
@@ -874,10 +885,24 @@ function O:Oeffnen()
     self.sitzungZu = not ns.db.autoOeffnen or keiner
     self.laschenHilfe = keiner and L.NO_CHARS_TOOLTIP or nil
   end
+  -- Das Spiel stellt den Rechtsklick bei jedem Klick auf einen Reiter neu ein (auch bei MAIL_SHOW,
+  -- das Forever mehrmals meldet). Danach gilt wieder O:Rechtsklick.
+  if not self.reiterBeobachtet and hooksecurefunc and MailFrameTab_OnClick then
+    self.reiterBeobachtet = true
+    hooksecurefunc("MailFrameTab_OnClick", function()
+      O:Rechtsklick()
+      O:Zeile()
+    end)
+  end
   self:Anker()
   self:Sichtbarkeit()
   -- Zur Sicherheit noch einmal im nächsten Bild, wenn das Postfenster sicher sichtbar ist
-  if C_Timer and C_Timer.After then C_Timer.After(0, function() O:Aktualisieren() end) end
+  if C_Timer and C_Timer.After then
+    C_Timer.After(0, function()
+      O:Rechtsklick()
+      O:Aktualisieren()
+    end)
+  end
 end
 
 -- Viele Taschen-Ereignisse kurz hintereinander: nur einmal neu rechnen, und nur wenn sichtbar
@@ -898,11 +923,10 @@ local function postfachLeer()
   return postImEingang() == 0 and not (HasNewMail and HasNewMail())
 end
 
--- Beim Öffnen des Briefkastens einmal je Besuch von selbst zum Reiter "Send Mail". Dann geht der
--- Rechtsklick in der Tasche sofort.
---   Einzelbrief: immer, auch wenn Post im Posteingang liegt (Patrick, 20. Nov: „aus Versehen etwas
---   konsumiert“). Die Zeile unter dem Knopf nennt dann die Briefe (O:Zeile).
---   Verteilen: nur bei leerem Postfach, wie bisher.
+-- Leeres Postfach: einmal je Besuch von selbst zum Reiter "Send Mail", zu lesen gibt es ja nichts.
+-- Liegt Post im Posteingang, bleibt er offen (Patrick, 24. Nov: „manchmal nur Post im Briefkasten,
+-- die ich öffnen will“); im Einzelbrief legt der Rechtsklick dort trotzdem in den Brief
+-- (O:Rechtsklick). 1.1.1 ist im Einzelbrief auch mit Post zum Reiter "Send Mail" gesprungen.
 -- Nur wenn die Leiste offen ist: Wer sie eingeklappt hat, bekommt das Postfenster wie immer.
 -- Kurz warten: Forever meldet MAIL_SHOW mehrmals und springt dabei selbst auf den Reiter "Inbox",
 -- und die erste Meldung kann kommen, bevor die Post geladen ist. Danach wechselt Pigeon Post in
@@ -910,12 +934,12 @@ end
 -- hält nur die Zahl der Briefe in der Zeile aktuell.
 function O:PostfachPruefen()
   if not (self.panel and self.panel:IsVisible()) then return end
+  self:Rechtsklick()
   self:Zeile()
   if self.postfachGeprueft or not (C_Timer and C_Timer.After) then return end
   self.postfachGeprueft = true
   C_Timer.After(0.3, function()
-    if not (O.panel and O.panel:IsVisible()) then return end
-    if verteilen() and not postfachLeer() then return end
+    if not (O.panel and O.panel:IsVisible()) or not postfachLeer() then return end
     O:ZumSendeReiter()
   end)
 end

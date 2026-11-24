@@ -61,7 +61,7 @@ SlashCmdList.PIGEONPOST = function(eingabe)
     if MailFrame and MailFrame:IsShown() and O.panel then
       -- Umschalten nach dem, was zu sehen ist. Bis 1.1.0 zählte nur der gespeicherte Zustand: War die
       -- Leiste nur für diesen Besuch zu (Leiste nicht automatisch zeigen), ging sie erst beim zweiten
-      -- Befehl auf. Aufklappen wie mit der Lasche, im Einzelbrief also gleich zum Reiter "Send Mail".
+      -- Befehl auf. Aufklappen wie mit der Lasche.
       if O.panel:IsShown() then
         ns.db.eingeklappt = true
         O:Sichtbarkeit()

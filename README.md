@@ -21,7 +21,7 @@ You farm herbs and ore on one character, but your alchemist, blacksmith or bank 
 
 - **Send gold to your alts**: type the amount into the Gold row. It goes with the next letter, for example with your materials and the deposit for the auction house, or on its own. Pigeon Post asks before it sends gold.
 - **What's new** window after updates, and square minimaps work.
-- **1.1.1**: with One character the Send Mail tab opens right away, even with mail in your Inbox, so a right-click in your bags adds an item instead of using it. The panel tells you how many letters are waiting.
+- **1.1.2**: the mailbox opens on your Inbox again when mail is waiting, and with One character a right-click in your bags still puts the item into the letter instead of using it. Collapse the panel to use or equip items as usual.
 
 ## Features
 
@@ -29,7 +29,7 @@ You farm herbs and ore on one character, but your alchemist, blacksmith or bank 
 - **Only your own characters**: Pigeon Post lists the characters you have logged in with. There is no text field for names.
 - **Favorite recipient**: mark your bank character with a star. It is preselected on every character.
 - **Categories**: Herbs, Mining, Cloth, Leather, Enchanting, Cooking and Green gear.
-- **Single items**: right-click anything that is not soulbound in your bags on the Send Mail tab to add it to the next letter. With One character the Send Mail tab opens by itself, even when mail is waiting, and the panel tells you how many letters are in your Inbox. With Distribute it opens by itself when the mailbox is empty.
+- **Single items**: right-click anything that is not soulbound in your bags to add it to the next letter. With One character and the panel open this works on the Inbox tab too, so you can read your mail and fill your letter at the same time. With an empty mailbox the Send Mail tab opens by itself.
 - **Gold for your alts**: type an amount into the Gold row below the preview. It goes with the next letter after you confirm it, only to your own characters.
 - **Full stacks only** or **everything**, **Never send** list, **history**, **item check** and a **tooltip line** with the category.
 - **Works in every game language**: items are recognized by the game's own item data, never by names.
@@ -69,12 +69,12 @@ Herbs to your alchemist, ore to your blacksmith, cloth to your tailor, everythin
 
 - It **sends gold only when you type it into the Gold row and confirm it**, only to your own characters, and never COD. If there is money in the game's mail window, it stops.
 - It only mails characters **from your own list**, on **your realm and faction**, with their **full first and last name**.
-- **One click sends at most one letter.** Opening a mailbox never sends anything, at most Pigeon Post switches to the Send Mail tab.
+- **One click sends at most one letter.** Opening a mailbox never sends anything. With an empty mailbox Pigeon Post switches to the Send Mail tab, nothing more.
 - **You only send what you saw**: every attachment is compared with the preview before the letter goes out.
 - Soulbound items, quest items, bags and items on your *Never send* list are never touched.
 
 ## Support
 
-Made by a gamer, for gamers. Pigeon Post is free and always will be.
+Made by a gamer, for gamers. Pigeon Post is free and always will be. If it saved you some time at the mailbox, you can [buy me a coffee](DONATE_LINK).
 
 Bug reports and ideas are welcome in the [issues](https://github.com/Darynus/PigeonPost/issues) or in the CurseForge comments.

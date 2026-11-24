@@ -1,5 +1,12 @@
 # Pigeon Post changelog
 
+## 1.1.2 (2026-11-24)
+
+- **Read your mail first**: the mailbox opens on your Inbox again when mail is waiting. Only with an empty mailbox the Send Mail tab opens by itself, as before 1.1.1.
+- **Right-click adds to the letter on the Inbox tab too**: with One character and the panel open, a right-click on an item in your bags puts it into the next letter instead of using it, while your Inbox stays open. It shows up in the preview right away, a right-click there puts it back.
+- Collapse the panel or pick Distribute, and a right-click in your bags works as the game does it, for example to use or equip an item.
+- Picking One character or expanding the panel no longer switches the tab.
+
 ## 1.1.1 (2026-11-20)
 
 - **With One character the Send Mail tab opens right away**: when you open a mailbox, even with mail in your Inbox, when you pick One character and when you expand the panel. A right-click in your bags now puts the item into the letter instead of using it.
