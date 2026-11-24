@@ -75,6 +75,6 @@ Herbs to your alchemist, ore to your blacksmith, cloth to your tailor, everythin
 
 ## Support
 
-Made by a gamer, for gamers. Pigeon Post is free and always will be. If it saved you some time at the mailbox, you can [buy me a coffee](DONATE_LINK).
+Made by a gamer, for gamers. Pigeon Post is free and always will be.
 
 Bug reports and ideas are welcome in the [issues](https://github.com/Darynus/PigeonPost/issues) or in the CurseForge comments.
